@@ -52,11 +52,20 @@ async function searchSpotify() {
 
         console.log("Datos recibidos:", data);
 
-        searchResults.songs = data.tracks?.items || [];
-        searchResults.albums = data.albums?.items || [];
-        searchResults.artists = data.artists?.items.filter(artist => artist.data.profile.name.toLowerCase() === query.toLowerCase()) || [];
+        // Obtener el ID del artista si existe
+        if (data.artists?.items.length > 0) {
+            const artist = data.artists.items[0].data; // Primer artista encontrado
+            const artistId = artist.uri.split(":")[2]; // Extrae el ID del URI
+            
+            console.log("ID del artista encontrado:", artistId);
 
-        showResults("songs");
+            // Llamar a la función para buscar los álbumes del artista
+            getArtistAlbums(artistId, artist.profile.name);
+        } else {
+            console.warn("No se encontró el artista.");
+            document.getElementById("resultsContainer").innerHTML = "<p class='text-danger'>No se encontró el artista.</p>";
+        }
+
     } catch (error) {
         console.error("Error en la búsqueda de Spotify:", error);
         document.getElementById("resultsContainer").innerHTML = "<p class='text-danger'>Error al obtener datos.</p>";
@@ -134,22 +143,16 @@ async function getAlbumDetails(albumId) {
     try {
         const response = await fetch(url, options);
         const data = await response.json();
-        console.log("Detalles del álbum:", data);
+        console.log("Pistas del álbum:", data);
 
-        if (!data.tracks || !data.tracks.items) {
-            document.getElementById("resultsContainer").innerHTML = "<p class='text-danger'>No se encontraron canciones en este álbum.</p>";
+        if (!data.tracks?.items.length) {
+            document.getElementById("resultsContainer").innerHTML = "<p class='text-warning'>No se encontraron canciones en este álbum.</p>";
             return;
         }
 
         let html = `<h3>Canciones del Álbum</h3><div class='row'>`;
         data.tracks.items.forEach(track => {
-            html += `
-                <div class='col-md-6'>
-                    <div class='list-group-item'>
-                        ${track.name}
-                        <a href="https://open.spotify.com/track/${track.id}" class="btn btn-success btn-sm float-end">Escuchar</a>
-                    </div>
-                </div>`;
+            html += `<div class='col-md-6'><div class='list-group-item'>${track.name}</div></div>`;
         });
         html += "</div>";
 
@@ -158,7 +161,6 @@ async function getAlbumDetails(albumId) {
         console.error("Error al obtener detalles del álbum:", error);
     }
 }
-
 
 async function getArtistSongs(artistId) {
     const url = `https://${API_HOST}/search/?q=${artistId}&type=tracks&offset=0&limit=50`;
@@ -207,5 +209,48 @@ async function getArtistSongs(artistId) {
         document.getElementById("resultsContainer").innerHTML = html;
     } catch (error) {
         console.error("Error al obtener canciones del artista:", error);
+    }
+}
+
+async function getArtistAlbums(artistId, artistName) {
+    const url = `https://${API_HOST}/artist_albums/?id=${artistId}&offset=0&limit=5`;
+    const options = { 
+        method: "GET", 
+        headers: { 
+            "x-rapidapi-key": API_KEY, 
+            "x-rapidapi-host": API_HOST 
+        } 
+    };
+
+    try {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        console.log("Álbumes del artista:", data);
+
+        if (!data.albums?.items.length) {
+            document.getElementById("resultsContainer").innerHTML = `<p class='text-warning'>No se encontraron álbumes para ${artistName}.</p>`;
+            return;
+        }
+
+        let html = `<h3>Álbumes de ${artistName}</h3><div class='row'>`;
+        data.albums.items.forEach(album => {
+            const albumData = album.data;
+            html += `
+                <div class="col-md-4">
+                    <div class="card mb-2">
+                        <img src="${albumData.coverArt.sources[0].url}" class="card-img-top">
+                        <div class="card-body">
+                            <h5 class="card-title">${albumData.name}</h5>
+                            <p class="card-text">Año: ${albumData.date.year}</p>
+                            <button onclick="getAlbumDetails('${albumData.id}')" class="btn btn-primary">Ver canciones</button>
+                        </div>
+                    </div>
+                </div>`;
+        });
+        html += "</div>";
+
+        document.getElementById("resultsContainer").innerHTML = html;
+    } catch (error) {
+        console.error("Error al obtener álbumes del artista:", error);
     }
 }
