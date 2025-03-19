@@ -63,84 +63,95 @@ async function searchSpotify() {
 }
 
 // Función para mostrar las canciones en el HTML
+// Función para mostrar las canciones en el HTML
 function displaySongs(songs) {
+    const songsContainer = document.getElementById("songs");
+    songsContainer.innerHTML = ""; // Limpiar antes de agregar resultados
+
     let html = "<h3>Resultados de Canciones</h3>";
 
     if (songs.length === 0) {
         html += "<p>No se encontraron canciones.</p>";
     } else {
+        html += '<div class="row">';
         songs.forEach(song => {
             const track = song.data;
             html += `
-                <div class="card mb-2">
-                    <div class="card-body d-flex align-items-center">
-                        <img src="${track.albumOfTrack.coverArt.sources[0].url}" alt="Album Cover" class="me-3" width="50">
-                        <div>
-                            <h5>${track.name}</h5>
-                            <p>Artista: ${track.artists.items.map(artist => artist.profile.name).join(", ")}</p>
+                <div class="col-md-4">
+                    <div class="card mb-2">
+                        <img src="${track.albumOfTrack.coverArt.sources[0].url}" alt="Album Cover" class="card-img-top">
+                        <div class="card-body">
+                            <h5 class="card-title">${track.name}</h5>
+                            <p class="card-text">Artista: ${track.artists.items.map(artist => artist.profile.name).join(", ")}</p>
                             <a href="https://open.spotify.com/track/${track.id}" target="_blank" class="btn btn-sm btn-success">Escuchar</a>
                         </div>
                     </div>
-                </div>
-            `;
+                </div>`;
         });
+        html += '</div>';
     }
 
-    document.getElementById("songs").innerHTML = html;
+    songsContainer.innerHTML = html;
 }
 
 // Función para mostrar los álbumes en el HTML
 function displayAlbums(albums) {
+    const albumsContainer = document.getElementById("albums");
+    albumsContainer.innerHTML = ""; // Limpiar antes de agregar resultados
+
     let html = "<h3>Resultados de Álbumes</h3>";
 
     if (albums.length === 0) {
         html += "<p>No se encontraron álbumes.</p>";
     } else {
+        html += '<div class="row">';
         albums.forEach(album => {
             const albumData = album.data;
             html += `
-                <div class="card mb-2">
-                    <div class="card-body d-flex align-items-center">
-                        <img src="${albumData.coverArt.sources[0].url}" alt="Album Cover" class="me-3" width="50">
-                        <div>
-                            <h5>${albumData.name}</h5>
-                            <p>Artista: ${albumData.artists.items.map(artist => artist.profile.name).join(", ")}</p>
-                            <p>Año: ${albumData.date.year}</p>
+                <div class="col-md-4">
+                    <div class="card mb-2">
+                        <img src="${albumData.coverArt.sources[0].url}" alt="Album Cover" class="card-img-top">
+                        <div class="card-body">
+                            <h5 class="card-title">${albumData.name}</h5>
+                            <p class="card-text">Artista: ${albumData.artists.items.map(artist => artist.profile.name).join(", ")}</p>
+                            <p class="card-text">Año: ${albumData.date.year}</p>
                             <a href="https://open.spotify.com/album/${albumData.id}" target="_blank" class="btn btn-sm btn-primary">Ver en Spotify</a>
                         </div>
                     </div>
-                </div>
-            `;
+                </div>`;
         });
+        html += '</div>';
     }
 
-    document.getElementById("albums").innerHTML = html;
+    albumsContainer.innerHTML = html;
 }
 
-// Función para mostrar los artistas en el HTML
+// Función para mostrar el primer artista en el HTML
 function displayArtists(artists) {
-    let html = "<h3>Resultados de Artistas</h3>";
+    const artistsContainer = document.getElementById("artists");
+    artistsContainer.innerHTML = ""; // Limpiar antes de agregar resultados
+
+    let html = "<h3>Resultado del Artista</h3>";
 
     if (artists.length === 0) {
         html += "<p>No se encontraron artistas.</p>";
     } else {
-        artists.forEach(artist => {
-            const artistData = artist.data;
-            const imgSrc = artistData.visuals.avatarImage?.sources[0].url || "https://via.placeholder.com/50";
-            
-            html += `
-                <div class="card mb-2">
-                    <div class="card-body d-flex align-items-center">
-                        <img src="${imgSrc}" alt="Artist Image" class="me-3" width="50">
-                        <div>
-                            <h5>${artistData.profile.name}</h5>
+        const artistData = artists[0].data;
+        const imgSrc = artistData.visuals?.avatarImage?.sources?.[0]?.url || "https://via.placeholder.com/50";
+
+        html += `
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card mb-2">
+                        <img src="${imgSrc}" alt="Artist Image" class="card-img-top">
+                        <div class="card-body">
+                            <h5 class="card-title">${artistData.profile.name}</h5>
                             <a href="https://open.spotify.com/artist/${artistData.uri.split(':')[2]}" target="_blank" class="btn btn-sm btn-info">Ver en Spotify</a>
                         </div>
                     </div>
                 </div>
-            `;
-        });
+            </div>`;
     }
 
-    document.getElementById("artists").innerHTML = html;
+    artistsContainer.innerHTML = html;
 }
