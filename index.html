@@ -19,29 +19,21 @@
         </div>
 
         <!-- Pestañas de resultados -->
-        <ul class="nav nav-tabs" id="resultTabs">
-            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#songs">Canciones</a></li>
-            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#albums">Álbumes</a></li>
-            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#artists">Artistas</a></li>
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#" onclick="showResults('songs')">Canciones</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#" onclick="showResults('albums')">Álbumes</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#" onclick="showResults('artists')">Artistas</a>
+            </li>
         </ul>
 
-        <div class="tab-content">
-            <!-- Canciones -->
-            <div id="songs" class="tab-pane fade show active mt-3">
-                <div id="songResults" class="row"></div>
-            </div>
-        
-            <!-- Álbumes -->
-            <div id="albums" class="tab-pane fade mt-3">
-                <div id="albumResults" class="row"></div>
-            </div>
-        
-            <!-- Artistas -->
-            <div id="artists" class="tab-pane fade mt-3">
-                <div id="artistResults" class="row"></div>
-            </div>
-        </div>
-        
+        <!-- Contenedor de resultados dinámicos -->
+        <div id="resultsContainer" class="mt-3"></div>
+
     </div>
 
     <script src="/js/app.js"></script>
