@@ -1,20 +1,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
 
 body {
-    background: linear-gradient(135deg, #191414, #000000);
-    background-size: 400% 400%;
-    animation: fondoAnimado 10s infinite alternate ease-in-out;
-    font-family: 'Bebas Neue', sans-serif;
-    color: white;
-    text-align: center;
     background: url("../img/2.png") no-repeat center center fixed;
     background-size: cover;
     min-height: 100vh;
+    animation: fondoMovil 20s infinite alternate ease-in-out;
 }
 
-@keyframes fondoAnimado {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 100% 50%; }
+@keyframes fondoMovil {
+    0% {
+        background-size: 100%;
+        background-position: center center;
+    }
+    50% {
+        background-size: 105%;
+        background-position: left top;
+    }
+    100% {
+        background-size: 100%;
+        background-position: center center;
+    }
 }
 
 h1 {
