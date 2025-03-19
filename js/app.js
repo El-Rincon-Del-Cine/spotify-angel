@@ -52,19 +52,26 @@ async function searchSpotify() {
 
         console.log("Datos recibidos:", data);
 
-        // Obtener el ID del artista si existe
-        if (data.artists?.items.length > 0) {
-            const artist = data.artists.items[0].data; // Primer artista encontrado
-            const artistId = artist.uri.split(":")[2]; // Extrae el ID del URI
-            
-            console.log("ID del artista encontrado:", artistId);
+        // Vaciar los resultados anteriores
+        searchResults = { songs: [], albums: [], artists: [] };
 
-            // Llamar a la función para buscar los álbumes del artista
-            getArtistAlbums(artistId, artist.profile.name);
-        } else {
-            console.warn("No se encontró el artista.");
-            document.getElementById("resultsContainer").innerHTML = "<p class='text-danger'>No se encontró el artista.</p>";
+        // Guardar canciones
+        if (data.tracks?.items.length > 0) {
+            searchResults.songs = data.tracks.items;
         }
+
+        // Guardar álbumes
+        if (data.albums?.items.length > 0) {
+            searchResults.albums = data.albums.items;
+        }
+
+        // Guardar artistas
+        if (data.artists?.items.length > 0) {
+            searchResults.artists = data.artists.items;
+        }
+
+        // Mostrar resultados
+        showResults("songs"); // Puedes cambiar a "albums" o "artists" según lo que quieras mostrar primero
 
     } catch (error) {
         console.error("Error en la búsqueda de Spotify:", error);
