@@ -52,26 +52,13 @@ async function searchSpotify() {
 
         console.log("Datos recibidos:", data);
 
-        // Vaciar los resultados anteriores
-        searchResults = { songs: [], albums: [], artists: [] };
+        // Almacenar los resultados en searchResults
+        searchResults.songs = data.tracks?.items || [];
+        searchResults.albums = data.albums?.items || [];
+        searchResults.artists = data.artists?.items || [];
 
-        // Guardar canciones
-        if (data.tracks?.items.length > 0) {
-            searchResults.songs = data.tracks.items;
-        }
-
-        // Guardar álbumes
-        if (data.albums?.items.length > 0) {
-            searchResults.albums = data.albums.items;
-        }
-
-        // Guardar artistas
-        if (data.artists?.items.length > 0) {
-            searchResults.artists = data.artists.items;
-        }
-
-        // Mostrar resultados
-        showResults("songs"); // Puedes cambiar a "albums" o "artists" según lo que quieras mostrar primero
+        // Mostrar los resultados inmediatamente después de la búsqueda
+        showResults("songs");
 
     } catch (error) {
         console.error("Error en la búsqueda de Spotify:", error);
@@ -84,7 +71,7 @@ function showResults(type) {
     resultsContainer.innerHTML = "<div class='row'>";
     let html = "";
 
-    if (type === "songs") {
+    if (type === "songs" && searchResults.songs.length > 0) {
         html += "<h3>Resultados de Canciones</h3>";
         searchResults.songs.forEach(song => {
             const track = song.data;
@@ -100,7 +87,7 @@ function showResults(type) {
                     </div>
                 </div>`;
         });
-    } else if (type === "albums") {
+    } else if (type === "albums" && searchResults.albums.length > 0) {
         html += "<h3>Resultados de Álbumes</h3>";
         searchResults.albums.forEach(album => {
             const albumData = album.data;
@@ -117,7 +104,7 @@ function showResults(type) {
                     </div>
                 </div>`;
         });
-    } else if (type === "artists") {
+    } else if (type === "artists" && searchResults.artists.length > 0) {
         html += "<h3>Resultados de Artistas</h3>";
         searchResults.artists.forEach(artist => {
             const artistData = artist.data;
@@ -133,7 +120,10 @@ function showResults(type) {
                     </div>
                 </div>`;
         });
+    } else {
+        html = "<p class='text-danger'>No se encontraron resultados.</p>";
     }
+
     resultsContainer.innerHTML += html + "</div>";
 }
 
