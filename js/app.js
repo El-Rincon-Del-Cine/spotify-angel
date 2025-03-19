@@ -131,7 +131,7 @@ async function getAlbumDetails(albumId) {
         console.log("Detalles del álbum:", data);
         
         let html = `<h3>Canciones del Álbum</h3><div class='row'>`;
-        data.data.album.tracks.items.forEach(track => {
+        data.tracks.items.forEach(track => {
             html += `<div class='col-md-6'><div class='list-group-item'>${track.name}</div></div>`;
         });
         html += "</div>";
@@ -139,5 +139,26 @@ async function getAlbumDetails(albumId) {
         document.getElementById("resultsContainer").innerHTML = html;
     } catch (error) {
         console.error("Error al obtener detalles del álbum:", error);
+    }
+}
+
+async function getArtistTopTracks(artistId) {
+    const url = `https://${API_HOST}/artist_top_tracks/?id=${artistId}&country=US`;
+    const options = { method: "GET", headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": API_HOST } };
+    
+    try {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        console.log("Top Tracks:", data);
+
+        let html = `<h3>Canciones Populares</h3><div class='row'>`;
+        data.tracks.forEach(track => {
+            html += `<div class='col-md-6'><div class='list-group-item'>${track.name}</div></div>`;
+        });
+        html += "</div>";
+        
+        document.getElementById("resultsContainer").innerHTML = html;
+    } catch (error) {
+        console.error("Error al obtener canciones populares del artista:", error);
     }
 }
