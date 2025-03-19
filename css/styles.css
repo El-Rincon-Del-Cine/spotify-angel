@@ -9,6 +9,7 @@ body {
     text-align: center;
     background: url("../img/2.png") no-repeat center center fixed;
     background-size: cover;
+    min-height: 100vh;
 }
 
 @keyframes fondoAnimado {
@@ -86,10 +87,10 @@ h1 {
 }
 
 #songs, #albums, #artists {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
+    display: list-item;
+    flex-wrap: inherit;
     justify-content: center;
+    gap: 20px;
 }
 
 .card {
