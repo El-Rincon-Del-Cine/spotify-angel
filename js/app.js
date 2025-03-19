@@ -38,7 +38,6 @@ async function searchSpotify() {
     }
 
     const url = `https://${API_HOST}/search/?q=${encodeURIComponent(query)}&type=multi&offset=0&limit=10&numberOfTopResults=5`;
-
     const options = {
         method: "GET",
         headers: {
@@ -55,7 +54,7 @@ async function searchSpotify() {
 
         searchResults.songs = data.tracks?.items || [];
         searchResults.albums = data.albums?.items || [];
-        searchResults.artists = data.artists?.items || [];
+        searchResults.artists = data.artists?.items.filter(artist => artist.data.profile.name.toLowerCase() === query.toLowerCase()) || [];
 
         showResults("songs");
     } catch (error) {
@@ -66,7 +65,7 @@ async function searchSpotify() {
 
 function showResults(type) {
     const resultsContainer = document.getElementById("resultsContainer");
-    resultsContainer.innerHTML = "";
+    resultsContainer.innerHTML = "<div class='row'>";
     let html = "";
 
     if (type === "songs") {
@@ -119,32 +118,25 @@ function showResults(type) {
                 </div>`;
         });
     }
-    resultsContainer.innerHTML = html;
-}
-
-async function getArtistTopTracks(artistId) {
-    const url = `https://${API_HOST}/artist_top_tracks?id=${artistId}&country=US`;
-    const options = { method: "GET", headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": API_HOST } };
-
-    try {
-        const response = await fetch(url, options);
-        const data = await response.json();
-        console.log("Top tracks:", data);
-        // Aquí se mostrarán los resultados en el DOM
-    } catch (error) {
-        console.error("Error al obtener canciones populares:", error);
-    }
+    resultsContainer.innerHTML += html + "</div>";
 }
 
 async function getAlbumDetails(albumId) {
-    const url = `https://${API_HOST}/album?id=${albumId}`;
+    const url = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`;
     const options = { method: "GET", headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": API_HOST } };
 
     try {
         const response = await fetch(url, options);
         const data = await response.json();
         console.log("Detalles del álbum:", data);
-        // Aquí se mostrarán los detalles del álbum en el DOM
+        
+        let html = `<h3>Canciones del Álbum</h3><div class='row'>`;
+        data.data.album.tracks.items.forEach(track => {
+            html += `<div class='col-md-6'><div class='list-group-item'>${track.name}</div></div>`;
+        });
+        html += "</div>";
+        
+        document.getElementById("resultsContainer").innerHTML = html;
     } catch (error) {
         console.error("Error al obtener detalles del álbum:", error);
     }
