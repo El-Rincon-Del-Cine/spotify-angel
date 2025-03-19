@@ -5,8 +5,8 @@ body {
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
-    height: 100vh;
-    width: 100vw;
+    min-height: 100vh; /* Se asegura de cubrir toda la pantalla */
+    width: 100%;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
@@ -128,4 +128,12 @@ h1 {
     background: rgba(0, 0, 0, 0.6);
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
+}
+
+@media (max-width: 768px) {
+    body {
+        background-attachment: scroll; /* Evita problemas en móviles */
+        background-size: cover;
+        background-position: center;
+    }
 }
