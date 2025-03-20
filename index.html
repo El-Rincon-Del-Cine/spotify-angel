@@ -13,10 +13,12 @@
         <h1>Spotify Search</h1>
 
         <!-- Barra de búsqueda -->
-        <div class="input-group my-4">
-            <input type="text" id="searchInput" class="form-control" placeholder="Busca una canción, artista o álbum">
-            <button class="btn btn-custom" onclick="searchSpotify()">Buscar</button>
-        </div>
+        <form id="searchForm">
+            <div class="input-group my-4">
+                <input type="text" id="searchInput" class="form-control" placeholder="Busca una canción, artista o álbum">
+                <button type="submit" class="btn btn-custom">Buscar</button>
+            </div>
+        </form>
 
         <!-- Pestañas de resultados -->
         <ul class="nav nav-tabs">
