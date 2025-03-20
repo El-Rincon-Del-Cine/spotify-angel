@@ -2,32 +2,15 @@
 
 body {
     background: url("../img/2.png") no-repeat center center fixed;
-    background-size: cover;
+    background-size: cover; /* Asegura que la imagen cubra toda la página */
     background-position: center;
-    background-attachment: fixed;
-    min-height: 100vh; /* Se asegura de cubrir toda la pantalla */
-    width: 100%;
+    min-height: 100vh; /* Cubre toda la altura de la pantalla */
     margin: 0;
     padding: 0;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
-    animation: fondoMovil 20s infinite alternate ease-in-out;
-}
-
-@keyframes fondoMovil {
-    0% {
-        background-size: 100%;
-        background-position: center center;
-    }
-    50% {
-        background-size: 105%;
-        background-position: left top;
-    }
-    100% {
-        background-size: 100%;
-        background-position: center center;
-    }
+    font-family: 'Bebas Neue', sans-serif;
 }
 
 h1 {
@@ -100,7 +83,7 @@ h1 {
 }
 
 #songs, #albums, #artists {
-    display: list-item;
+    display: block;
     flex-wrap: inherit;
     justify-content: center;
     gap: 20px;
