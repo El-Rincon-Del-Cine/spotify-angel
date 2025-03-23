@@ -1,46 +1,60 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spotify Search</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/css/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotify PWA</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Estilos personalizados -->
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-    <div class="container mt-5">
-        <h1>Spotify Search</h1>
-
-        <!-- Barra de búsqueda -->
-        <form id="searchForm">
-            <div class="input-group my-4">
-                <input type="text" id="searchInput" class="form-control" placeholder="Busca una canción, artista o álbum">
-                <button type="submit" class="btn btn-custom">Buscar</button>
-            </div>
-        </form>
-
-        <!-- Pestañas de resultados -->
-        <ul class="nav nav-tabs">
-            <li class="nav-item">
-                <a class="nav-link active" data-bs-toggle="tab" href="#" onclick="showResults('songs')">Canciones</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="tab" href="#" onclick="showResults('albums')">Álbumes</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="tab" href="#" onclick="showResults('artists')">Artistas</a>
-            </li>
-        </ul>
-
-        <!-- Contenedor de resultados dinámicos -->
-        <div id="resultsContainer" class="mt-3"></div>
-
+  <div class="app-container">
+    <!-- Barra de búsqueda -->
+    <div class="container mt-4">
+      <h1 class="text-center mb-4" style="color: #1DB954;">Spotify PWA</h1>
+      <div class="input-group mb-3">
+        <input
+          type="text"
+          id="search-input"
+          class="form-control"
+          placeholder="Buscar canción, álbum o artista"
+        />
+        <button
+          id="search-button"
+          class="btn btn-success"
+        >
+          Buscar
+        </button>
+      </div>
     </div>
-    <br><br>
 
-    <script src="/js/app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Resultados -->
+    <div class="container">
+      <div class="row mt-4">
+        <!-- Álbumes -->
+        <div class="col-md-4">
+          <h2 style="color: #1DB954;">Álbumes</h2>
+          <div id="albums-results"></div>
+        </div>
+        <!-- Artistas -->
+        <div class="col-md-4">
+          <h2 style="color: #1DB954;">Artistas</h2>
+          <div id="artists-results"></div>
+        </div>
+        <!-- Canciones -->
+        <div class="col-md-4">
+          <h2 style="color: #1DB954;">Canciones</h2>
+          <div id="tracks-results"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Script personalizado -->
+  <script src="/js/app.js"></script>
 </body>
 </html>
