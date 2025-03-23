@@ -149,13 +149,7 @@ async function getAlbumDetails(albumId) {
 
         let html = `<h3>Canciones del Álbum</h3><div class='row'>`;
         data.tracks.items.forEach(track => {
-            html += `
-                <div class='col-md-6'>
-                    <div class='list-group-item'>
-                        <p>${track.name}</p>
-                        <a href="https://open.spotify.com/track/${track.id}" class="btn btn-success">Escuchar</a>
-                    </div>
-                </div>`;
+            html += `<div class='col-md-6'><div class='list-group-item'>${track.name}</div></div>`;
         });
         html += "</div>";
 
@@ -165,8 +159,8 @@ async function getAlbumDetails(albumId) {
     }
 }
 
-async function getArtistTopTracks(artistId) {
-    const url = `https://${API_HOST}/artist_top_tracks/?id=${artistId}&offset=0&limit=10`;
+async function getArtistSongs(artistId) {
+    const url = `https://${API_HOST}/search/?q=${artistId}&type=tracks&offset=0&limit=50`;
     const options = { 
         method: "GET", 
         headers: { 
@@ -178,22 +172,30 @@ async function getArtistTopTracks(artistId) {
     try {
         const response = await fetch(url, options);
         const data = await response.json();
-        console.log("Canciones populares del artista:", data);
+        console.log("Canciones del artista:", data);
 
-        if (!data.tracks?.length) {
-            document.getElementById("resultsContainer").innerHTML = "<p class='text-warning'>No se encontraron canciones populares para este artista.</p>";
-            return;
-        }
+        // Obtener todas las canciones y filtrar duplicados
+        let uniqueSongs = [];
+        let seenSongs = new Set();
 
-        let html = `<h3>Canciones Populares del Artista</h3><div class='row'>`;
-        data.tracks.forEach(track => {
+        data.tracks.items.forEach(song => {
+            const track = song.data;
+            if (!seenSongs.has(track.id)) {
+                seenSongs.add(track.id);
+                uniqueSongs.push(track);
+            }
+        });
+
+        // Mostrar los resultados
+        let html = `<h3>Canciones del Artista</h3><div class='row'>`;
+        uniqueSongs.forEach(track => {
             html += `
                 <div class='col-md-4'>
                     <div class='card mb-2'>
-                        <img src="${track.album.images[0].url}" class="card-img-top">
+                        <img src="${track.albumOfTrack.coverArt.sources[0].url}" class="card-img-top">
                         <div class='card-body'>
                             <h5 class='card-title'>${track.name}</h5>
-                            <p class='card-text'>Álbum: ${track.album.name}</p>
+                            <p class='card-text'>Álbum: ${track.albumOfTrack.name}</p>
                             <a href="https://open.spotify.com/track/${track.id}" class="btn btn-success">Escuchar</a>
                         </div>
                     </div>
@@ -203,7 +205,7 @@ async function getArtistTopTracks(artistId) {
 
         document.getElementById("resultsContainer").innerHTML = html;
     } catch (error) {
-        console.error("Error al obtener canciones populares del artista:", error);
+        console.error("Error al obtener canciones del artista:", error);
     }
 }
 
@@ -244,4 +246,8 @@ async function getArtistAlbums(artistId, artistName) {
         });
         html += "</div>";
 
-        document.getElementById("resultsContainer").innerHTML
+        document.getElementById("resultsContainer").innerHTML = html;
+    } catch (error) {
+        console.error("Error al obtener álbumes del artista:", error);
+    }
+}
