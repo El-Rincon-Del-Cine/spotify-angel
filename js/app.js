@@ -211,3 +211,6 @@ async function showAlbumDetails(albumId) {
         resultsContainer.innerHTML = "<p class='text-danger'>Error al obtener las pistas del álbum.</p>";
     }
 }
+function playSong(trackId) {
+    alert(`Reproduciendo canción con ID: ${trackId}`);
+}
