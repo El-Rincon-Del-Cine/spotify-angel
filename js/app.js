@@ -73,30 +73,31 @@ function showResults(type) {
             });
             html += '</div>';
         }
-    } else if (type === "albums") {
-        html += "<h3>Resultados de Álbumes</h3>";
-        if (searchResults.albums.length === 0) {
-            html += "<p>No se encontraron álbumes.</p>";
-        } else {
-            html += '<div class="row">';
-            searchResults.albums.forEach(album => {
-                const albumData = album.data;
-                html += `
-                    <div class="col-md-4">
-                        <div class="card mb-2">
-                            <img src="${albumData.coverArt.sources[0].url}" alt="Album Cover" class="card-img-top">
-                            <div class="card-body">
-                                <h5 class="card-title">${albumData.name}</h5>
-                                <p class="card-text">Artista: ${albumData.artists.items.map(artist => artist.profile.name).join(", ")}</p>
-                                <p class="card-text">Año: ${albumData.date.year}</p>
-                                <button onclick="showAlbumDetails('${albumData.id}')" class="btn btn-sm btn-primary">Ver Detalles</button>
-                            </div>
+    } else // Dentro de la función showResults (en el apartado de álbumes)
+if (type === "albums") {
+    html += "<h3>Resultados de Álbumes</h3>";
+    if (searchResults.albums.length === 0) {
+        html += "<p>No se encontraron álbumes.</p>";
+    } else {
+        html += '<div class="row">';
+        searchResults.albums.forEach(album => {
+            const albumData = album.data;
+            html += `
+                <div class="col-md-4">
+                    <div class="card mb-2">
+                        <img src="${albumData.coverArt.sources[0].url}" alt="Album Cover" class="card-img-top">
+                        <div class="card-body">
+                            <h5 class="card-title">${albumData.name}</h5>
+                            <p class="card-text">Artista: ${albumData.artists.items.map(artist => artist.profile.name).join(", ")}</p>
+                            <p class="card-text">Año: ${albumData.date.year}</p>
+                            <button onclick="showAlbumDetails('${albumData.id}')" class="btn btn-sm btn-primary">Ver Pistas</button>
                         </div>
-                    </div>`;
-            });
-            html += '</div>';
-        }
-    } else if (type === "artists") {
+                    </div>
+                </div>`;
+        });
+        html += '</div>';
+    }
+} else if (type === "artists") {
         html += "<h3>Resultados de Artistas</h3>";
         if (searchResults.artists.length === 0) {
             html += "<p>No se encontraron artistas.</p>";
@@ -168,8 +169,9 @@ async function showArtistTopTracks(artistId) {
 }
 
 // Función para mostrar los detalles de un álbum
+// Función para mostrar las pistas de un álbum
 async function showAlbumDetails(albumId) {
-    const url = `https://${API_HOST}/album_tracks/?id=${albumId}`;
+    const url = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=300`;
     const options = {
         method: "GET",
         headers: {
@@ -181,10 +183,10 @@ async function showAlbumDetails(albumId) {
     try {
         const response = await fetch(url, options);
         const data = await response.json();
-        console.log("Detalles del álbum:", data);
+        console.log("Pistas del álbum:", data);
 
         const resultsContainer = document.getElementById("resultsContainer");
-        let html = "<h3>Detalles del Álbum</h3>";
+        let html = "<h3>Pistas del Álbum</h3>";
         if (data.items && data.items.length > 0) {
             html += '<div class="row">';
             data.items.forEach(track => {
@@ -201,11 +203,11 @@ async function showAlbumDetails(albumId) {
             });
             html += '</div>';
         } else {
-            html += "<p>No se encontraron canciones en este álbum.</p>";
+            html += "<p>No se encontraron pistas en este álbum.</p>";
         }
         resultsContainer.innerHTML = html;
     } catch (error) {
-        console.error("Error al obtener los detalles del álbum:", error);
-        resultsContainer.innerHTML = "<p class='text-danger'>Error al obtener los detalles del álbum.</p>";
+        console.error("Error al obtener las pistas del álbum:", error);
+        resultsContainer.innerHTML = "<p class='text-danger'>Error al obtener las pistas del álbum.</p>";
     }
 }
