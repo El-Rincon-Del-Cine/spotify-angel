@@ -36,8 +36,15 @@ async function searchSpotify() {
         searchResults.artists = data.artists?.items || [];
 
         // Mostrar automáticamente la primera pestaña (canciones)
-        showResults("songs");
-
+        if (searchResults.songs.length > 0) {
+            showResults("songs");
+        } else if (searchResults.albums.length > 0) {
+            showResults("albums");
+        } else if (searchResults.artists.length > 0) {
+            showResults("artists");
+        } else {
+            document.getElementById("resultsContainer").innerHTML = "<p>No se encontraron resultados.</p>";
+        }
     } catch (error) {
         console.error("Error en la búsqueda de Spotify:", error);
         document.getElementById("resultsContainer").innerHTML = "<p class='text-danger'>Error al obtener datos.</p>";
@@ -59,13 +66,16 @@ function showResults(type) {
             html += '<div class="row">';
             searchResults.songs.forEach(song => {
                 const track = song.data;
+                const coverArtUrl = track.albumOfTrack?.coverArt?.sources?.[0]?.url || "https://via.placeholder.com/150"; // Imagen predeterminada si no hay coverArt
+                const artistNames = track.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido"; // Artista predeterminado si no hay datos
+
                 html += `
                     <div class="col-md-4">
                         <div class="card mb-2">
-                            <img src="${track.albumOfTrack.coverArt.sources[0].url}" alt="Album Cover" class="card-img-top">
+                            <img src="${coverArtUrl}" alt="Album Cover" class="card-img-top">
                             <div class="card-body">
-                                <h5 class="card-title">${track.name}</h5>
-                                <p class="card-text">Artista: ${track.artists.items.map(artist => artist.profile.name).join(", ")}</p>
+                                <h5 class="card-title">${track.name || "Canción desconocida"}</h5>
+                                <p class="card-text">Artista: ${artistNames}</p>
                                 <button onclick="playSong('${track.id}')" class="btn btn-sm btn-success">Escuchar</button>
                             </div>
                         </div>
@@ -74,51 +84,56 @@ function showResults(type) {
             html += '</div>';
         }
     } else if (type === "albums") {
-    html += "<h3>Resultados de Álbumes</h3>";
-    if (searchResults.albums.length === 0) {
-        html += "<p>No se encontraron álbumes.</p>";
-    } else {
-        html += '<div class="row">';
-        searchResults.albums.forEach(album => {
-            const albumData = album.data;
-            html += `
-                <div class="col-md-4">
-                    <div class="card mb-2">
-                        <img src="${albumData.coverArt.sources[0].url}" alt="Album Cover" class="card-img-top">
-                        <div class="card-body">
-                            <h5 class="card-title">${albumData.name}</h5>
-                            <p class="card-text">Artista: ${albumData.artists.items.map(artist => artist.profile.name).join(", ")}</p>
-                            <p class="card-text">Año: ${albumData.date.year}</p>
-                            <button onclick="showAlbumDetails('${albumData.id}')" class="btn btn-sm btn-primary">Ver Pistas</button>
+        html += "<h3>Resultados de Álbumes</h3>";
+        if (searchResults.albums.length === 0) {
+            html += "<p>No se encontraron álbumes.</p>";
+        } else {
+            html += '<div class="row">';
+            searchResults.albums.forEach(album => {
+                const albumData = album.data;
+                const coverArtUrl = albumData.coverArt?.sources?.[0]?.url || "https://via.placeholder.com/150"; // Imagen predeterminada si no hay coverArt
+                const artistNames = albumData.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido"; // Artista predeterminado si no hay datos
+
+                html += `
+                    <div class="col-md-4">
+                        <div class="card mb-2">
+                            <img src="${coverArtUrl}" alt="Album Cover" class="card-img-top">
+                            <div class="card-body">
+                                <h5 class="card-title">${albumData.name || "Álbum desconocido"}</h5>
+                                <p class="card-text">Artista: ${artistNames}</p>
+                                <p class="card-text">Año: ${albumData.date?.year || "Desconocido"}</p>
+                                <button onclick="showAlbumDetails('${albumData.id}')" class="btn btn-sm btn-primary">Ver Pistas</button>
+                            </div>
                         </div>
-                    </div>
-                </div>`;
-        });
-        html += '</div>';
-    }
-} else if (type === "artists") {
-    html += "<h3>Resultados de Artistas</h3>";
-    if (searchResults.artists.length === 0) {
-        html += "<p>No se encontraron artistas.</p>";
-    } else {
-        html += '<div class="row">';
-        searchResults.artists.forEach(artist => {
-            const artistData = artist.data;
-            const imgSrc = artistData.visuals?.avatarImage?.sources?.[0]?.url || "https://via.placeholder.com/50";
-            html += `
-                <div class="col-md-4">
-                    <div class="card mb-2">
-                        <img src="${imgSrc}" alt="Artist Image" class="card-img-top">
-                        <div class="card-body">
-                            <h5 class="card-title">${artistData.profile.name}</h5>
-                            <button onclick="showArtistTopTracks('${artistData.uri.split(':')[2]}')" class="btn btn-sm btn-info">Ver Canciones Populares</button>
+                    </div>`;
+            });
+            html += '</div>';
+        }
+    } else if (type === "artists") {
+        html += "<h3>Resultados de Artistas</h3>";
+        if (searchResults.artists.length === 0) {
+            html += "<p>No se encontraron artistas.</p>";
+        } else {
+            html += '<div class="row">';
+            searchResults.artists.forEach(artist => {
+                const artistData = artist.data;
+                const imgSrc = artistData.visuals?.avatarImage?.sources?.[0]?.url || "https://via.placeholder.com/150"; // Imagen predeterminada si no hay avatar
+                const artistName = artistData.profile?.name || "Artista desconocido"; // Nombre predeterminado si no hay datos
+
+                html += `
+                    <div class="col-md-4">
+                        <div class="card mb-2">
+                            <img src="${imgSrc}" alt="Artist Image" class="card-img-top">
+                            <div class="card-body">
+                                <h5 class="card-title">${artistName}</h5>
+                                <button onclick="showArtistTopTracks('${artistData.uri.split(':')[2]}')" class="btn btn-sm btn-info">Ver Canciones Populares</button>
+                            </div>
                         </div>
-                    </div>
-                </div>`;
-        });
-        html += '</div>';
+                    </div>`;
+            });
+            html += '</div>';
+        }
     }
-}
 
     resultsContainer.innerHTML = html;
 }
@@ -146,13 +161,16 @@ async function showArtistTopTracks(artistId) {
             html += '<div class="row">';
             singles.forEach(single => {
                 const singleData = single.releases.items[0];
+                const coverArtUrl = singleData.coverArt?.sources?.[0]?.url || "https://via.placeholder.com/150"; // Imagen predeterminada si no hay coverArt
+                const artistNames = singleData.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido"; // Artista predeterminado si no hay datos
+
                 html += `
                     <div class="col-md-4">
                         <div class="card mb-2">
-                            <img src="${singleData.coverArt.sources[0].url}" alt="Single Cover" class="card-img-top">
+                            <img src="${coverArtUrl}" alt="Single Cover" class="card-img-top">
                             <div class="card-body">
-                                <h5 class="card-title">${singleData.name}</h5>
-                                <p class="card-text">Artista: ${singleData.artists.items[0].profile.name}</p>
+                                <h5 class="card-title">${singleData.name || "Canción desconocida"}</h5>
+                                <p class="card-text">Artista: ${artistNames}</p>
                                 <button onclick="playSong('${singleData.id}')" class="btn btn-sm btn-success">Escuchar</button>
                             </div>
                         </div>
@@ -190,12 +208,15 @@ async function showAlbumDetails(albumId) {
         if (data.items && data.items.length > 0) {
             html += '<div class="row">';
             data.items.forEach(track => {
+                const trackName = track.name || "Canción desconocida";
+                const artistNames = track.artists?.map(artist => artist.name).join(", ") || "Artista desconocido";
+
                 html += `
                     <div class="col-md-4">
                         <div class="card mb-2">
                             <div class="card-body">
-                                <h5 class="card-title">${track.name}</h5>
-                                <p class="card-text">Artista: ${track.artists.map(artist => artist.name).join(", ")}</p>
+                                <h5 class="card-title">${trackName}</h5>
+                                <p class="card-text">Artista: ${artistNames}</p>
                                 <button onclick="playSong('${track.id}')" class="btn btn-sm btn-success">Escuchar</button>
                             </div>
                         </div>
@@ -211,6 +232,8 @@ async function showAlbumDetails(albumId) {
         resultsContainer.innerHTML = "<p class='text-danger'>Error al obtener las pistas del álbum.</p>";
     }
 }
+
+// Función para simular la reproducción de una canción
 function playSong(trackId) {
     alert(`Reproduciendo canción con ID: ${trackId}`);
 }
