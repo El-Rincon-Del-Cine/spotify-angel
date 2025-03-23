@@ -83,8 +83,7 @@ function showResults(type) {
             });
             html += '</div>';
         }
-    } else // Dentro de la función showResults (en el apartado de álbumes)
-if (type === "albums") {
+    } else if (type === "albums") {
     html += "<h3>Resultados de Álbumes</h3>";
     if (searchResults.albums.length === 0) {
         html += "<p>No se encontraron álbumes.</p>";
