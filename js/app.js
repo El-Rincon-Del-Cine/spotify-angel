@@ -19,89 +19,131 @@ if ('serviceWorker' in navigator) {
                 console.log('Error al registrar el Service Worker:', error);
             });
     });
-} 
+}
 
-// app.js
-document.addEventListener('DOMContentLoaded', () => {
-  const searchButton = document.getElementById('search-button');
-  const searchInput = document.getElementById('search-input');
-  const albumsResults = document.getElementById('albums-results');
-  const artistsResults = document.getElementById('artists-results');
-  const tracksResults = document.getElementById('tracks-results');
+const API_KEY = "60a0e5bab7msh8cae9556ead86adp1f39a0jsn34cf68f6923e";
+const API_HOST = "spotify23.p.rapidapi.com";
 
-  searchButton.addEventListener('click', async () => {
-    const query = searchInput.value.trim();
-    if (query) {
-      const results = await searchSpotify(query);
-      displayResults(results);
+// Variable global para almacenar los resultados
+let searchResults = {
+    songs: [],
+    albums: [],
+    artists: []
+};
+
+// Función para realizar la búsqueda en Spotify
+async function searchSpotify() {
+    const query = document.getElementById("searchInput").value.trim();
+    if (query === "") {
+        alert("Por favor, ingresa un término de búsqueda.");
+        return;
     }
-  });
 
-  async function searchSpotify(query) {
+    const url = `https://${API_HOST}/search/?q=${encodeURIComponent(query)}&type=multi&offset=0&limit=10&numberOfTopResults=5`;
+
     const options = {
-      method: 'GET',
-      url: 'https://spotify23.p.rapidapi.com/search/',
-      params: {
-        q: query,
-        type: 'multi',
-        offset: '0',
-        limit: '10',
-        numberOfTopResults: '5'
-      },
-      headers: {
-        'X-RapidAPI-Key': '60a0e5bab7msh8cae9556ead86adp1f39a0jsn34cf68f6923e',
-        'X-RapidAPI-Host': 'spotify23.p.rapidapi.com'
-      }
+        method: "GET",
+        headers: {
+            "x-rapidapi-key": API_KEY,
+            "x-rapidapi-host": API_HOST
+        }
     };
 
     try {
-      const response = await axios.request(options);
-      return response.data;
+        const response = await fetch(url, options);
+        const data = await response.json();
+
+        // Verificar estructura de datos
+        console.log("Datos recibidos:", data);
+
+        // Guardar los resultados en la variable global
+        searchResults.songs = data.tracks?.items || [];
+        searchResults.albums = data.albums?.items || [];
+        searchResults.artists = data.artists?.items || [];
+
+        // Mostrar automáticamente la primera pestaña (canciones)
+        showResults("songs");
+
     } catch (error) {
-      console.error('Error fetching data:', error);
-      return null;
+        console.error("Error en la búsqueda de Spotify:", error);
+        document.getElementById("resultsContainer").innerHTML = "<p class='text-danger'>Error al obtener datos.</p>";
     }
-  }
+}
 
-  function displayResults(results) {
-    if (!results) return;
+// Función para mostrar los resultados según la pestaña seleccionada
+function showResults(type) {
+    const resultsContainer = document.getElementById("resultsContainer");
+    resultsContainer.innerHTML = ""; // Limpiar antes de agregar nuevos resultados
 
-    // Mostrar álbumes
-    albumsResults.innerHTML = results.albums?.items.map(album => `
-      <div class="card animate__fadeIn">
-        <img src="${album.data.coverArt.sources[0].url}" class="card-img-top" alt="${album.data.name}">
-        <div class="card-body">
-          <h5 class="card-title">${album.data.name}</h5>
-        </div>
-      </div>
-    `).join('');
+    let html = "";
 
-    // Mostrar artistas
-    artistsResults.innerHTML = results.artists?.items.map(artist => `
-      <div class="card animate__fadeIn">
-        <img src="${artist.data.visuals.avatarImage.sources[0].url}" class="card-img-top" alt="${artist.data.profile.name}">
-        <div class="card-body">
-          <h5 class="card-title">${artist.data.profile.name}</h5>
-          <button class="btn btn-outline-success" onclick="showTopTracks('${artist.data.uri}')">
-            Mostrar canciones famosas
-          </button>
-        </div>
-      </div>
-    `).join('');
+    if (type === "songs") {
+        html += "<h3>Resultados de Canciones</h3>";
+        if (searchResults.songs.length === 0) {
+            html += "<p>No se encontraron canciones.</p>";
+        } else {
+            html += '<div class="row">';
+            searchResults.songs.forEach(song => {
+                const track = song.data;
+                html += `
+                    <div class="col-md-4">
+                        <div class="card mb-2">
+                            <img src="${track.albumOfTrack.coverArt.sources[0].url}" alt="Album Cover" class="card-img-top">
+                            <div class="card-body">
+                                <h5 class="card-title">${track.name}</h5>
+                                <p class="card-text">Artista: ${track.artists.items.map(artist => artist.profile.name).join(", ")}</p>
+                                <a href="https://open.spotify.com/track/${track.id}" target="_blank" class="btn btn-sm btn-success">Escuchar</a>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+        }
+    } else if (type === "albums") {
+        html += "<h3>Resultados de Álbumes</h3>";
+        if (searchResults.albums.length === 0) {
+            html += "<p>No se encontraron álbumes.</p>";
+        } else {
+            html += '<div class="row">';
+            searchResults.albums.forEach(album => {
+                const albumData = album.data;
+                html += `
+                    <div class="col-md-4">
+                        <div class="card mb-2">
+                            <img src="${albumData.coverArt.sources[0].url}" alt="Album Cover" class="card-img-top">
+                            <div class="card-body">
+                                <h5 class="card-title">${albumData.name}</h5>
+                                <p class="card-text">Artista: ${albumData.artists.items.map(artist => artist.profile.name).join(", ")}</p>
+                                <p class="card-text">Año: ${albumData.date.year}</p>
+                                <a href="https://open.spotify.com/album/${albumData.id}" target="_blank" class="btn btn-sm btn-primary">Ver en Spotify</a>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+        }
+    } else if (type === "artists") {
+        html += "<h3>Resultados de Artistas</h3>";
+        if (searchResults.artists.length === 0) {
+            html += "<p>No se encontraron artistas.</p>";
+        } else {
+            const artistData = searchResults.artists[0].data;
+            const imgSrc = artistData.visuals?.avatarImage?.sources?.[0]?.url || "https://via.placeholder.com/50";
 
-    // Mostrar canciones
-    tracksResults.innerHTML = results.tracks?.items.map(track => `
-      <div class="card animate__fadeIn">
-        <div class="card-body">
-          <h5 class="card-title">${track.data.name}</h5>
-          <p class="card-text">${track.data.artists.items[0].profile.name}</p>
-        </div>
-      </div>
-    `).join('');
-  }
+            html += `
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card mb-2">
+                            <img src="${imgSrc}" alt="Artist Image" class="card-img-top">
+                            <div class="card-body">
+                                <h5 class="card-title">${artistData.profile.name}</h5>
+                                <a href="https://open.spotify.com/artist/${artistData.uri.split(':')[2]}" target="_blank" class="btn btn-sm btn-info">Ver en Spotify</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        }
+    }
 
-  window.showTopTracks = async (artistUri) => {
-    // Lógica para mostrar las canciones más famosas del artista
-    alert(`Mostrar canciones famosas del artista: ${artistUri}`);
-  };
-});
+    resultsContainer.innerHTML = html;
+}
