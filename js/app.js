@@ -83,33 +83,37 @@ function showResults(type) {
             });
             html += '</div>';
         }
-    } else if (type === "albums") {
-        html += "<h3>Resultados de Álbumes</h3>";
-        if (searchResults.albums.length === 0) {
-            html += "<p>No se encontraron álbumes.</p>";
-        } else {
-            html += '<div class="row">';
-            searchResults.albums.forEach(album => {
-                const albumData = album.data;
-                const coverArtUrl = albumData.coverArt?.sources?.[0]?.url || "https://via.placeholder.com/150"; // Imagen predeterminada si no hay coverArt
-                const artistNames = albumData.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido"; // Artista predeterminado si no hay datos
+    } else // Dentro de la función showResults (en el apartado de álbumes)
+if (type === "albums") {
+    html += "<h3>Resultados de Álbumes</h3>";
+    if (searchResults.albums.length === 0) {
+        html += "<p>No se encontraron álbumes.</p>";
+    } else {
+        html += '<div class="row">';
+        searchResults.albums.forEach(album => {
+            const albumData = album.data;
+            const coverArtUrl = albumData.coverArt?.sources?.[0]?.url || "https://via.placeholder.com/150"; // Imagen predeterminada si no hay coverArt
+            const artistNames = albumData.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido"; // Artista predeterminado si no hay datos
+            const albumId = albumData.id; // ID del álbum
+            const spotifyUrl = `https://open.spotify.com/album/${albumId}`; // Enlace a Spotify
 
-                html += `
-                    <div class="col-md-4">
-                        <div class="card mb-2">
-                            <img src="${coverArtUrl}" alt="Album Cover" class="card-img-top">
-                            <div class="card-body">
-                                <h5 class="card-title">${albumData.name || "Álbum desconocido"}</h5>
-                                <p class="card-text">Artista: ${artistNames}</p>
-                                <p class="card-text">Año: ${albumData.date?.year || "Desconocido"}</p>
-                                <button onclick="showAlbumDetails('${albumData.id}')" class="btn btn-sm btn-primary">Ver Pistas</button>
-                            </div>
+            html += `
+                <div class="col-md-4">
+                    <div class="card mb-2">
+                        <img src="${coverArtUrl}" alt="Album Cover" class="card-img-top">
+                        <div class="card-body">
+                            <h5 class="card-title">${albumData.name || "Álbum desconocido"}</h5>
+                            <p class="card-text">Artista: ${artistNames}</p>
+                            <p class="card-text">Año: ${albumData.date?.year || "Desconocido"}</p>
+                            <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-primary">Ver en Spotify</a>
+                            <button onclick="showAlbumDetails('${albumId}')" class="btn btn-sm btn-secondary">Ver Detalles</button>
                         </div>
-                    </div>`;
-            });
-            html += '</div>';
-        }
-    } else if (type === "artists") {
+                    </div>
+                </div>`;
+        });
+        html += '</div>';
+    }
+} else if (type === "artists") {
         html += "<h3>Resultados de Artistas</h3>";
         if (searchResults.artists.length === 0) {
             html += "<p>No se encontraron artistas.</p>";
@@ -187,7 +191,7 @@ async function showArtistTopTracks(artistId) {
     }
 }
 
-// Función para mostrar las pistas de un álbum
+// Función para mostrar los detalles de un álbum
 async function showAlbumDetails(albumId) {
     const url = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=300`;
     const options = {
@@ -201,10 +205,34 @@ async function showAlbumDetails(albumId) {
     try {
         const response = await fetch(url, options);
         const data = await response.json();
-        console.log("Pistas del álbum:", data);
+        console.log("Detalles del álbum:", data);
 
         const resultsContainer = document.getElementById("resultsContainer");
-        let html = "<h3>Pistas del Álbum</h3>";
+        let html = "<h3>Detalles del Álbum</h3>";
+
+        // Mostrar la información del álbum
+        const album = searchResults.albums.find(album => album.data.id === albumId);
+        if (album) {
+            const albumData = album.data;
+            const coverArtUrl = albumData.coverArt?.sources?.[0]?.url || "https://via.placeholder.com/150"; // Imagen predeterminada si no hay coverArt
+            const artistNames = albumData.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido"; // Artista predeterminado si no hay datos
+
+            html += `
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card mb-2">
+                            <img src="${coverArtUrl}" alt="Album Cover" class="card-img-top">
+                            <div class="card-body">
+                                <h5 class="card-title">${albumData.name || "Álbum desconocido"}</h5>
+                                <p class="card-text">Artista: ${artistNames}</p>
+                                <p class="card-text">Año: ${albumData.date?.year || "Desconocido"}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        // Mostrar las pistas del álbum
         if (data.items && data.items.length > 0) {
             html += '<div class="row">';
             data.items.forEach(track => {
@@ -226,10 +254,11 @@ async function showAlbumDetails(albumId) {
         } else {
             html += "<p>No se encontraron pistas en este álbum.</p>";
         }
+
         resultsContainer.innerHTML = html;
     } catch (error) {
-        console.error("Error al obtener las pistas del álbum:", error);
-        resultsContainer.innerHTML = "<p class='text-danger'>Error al obtener las pistas del álbum.</p>";
+        console.error("Error al obtener los detalles del álbum:", error);
+        resultsContainer.innerHTML = "<p class='text-danger'>Error al obtener los detalles del álbum.</p>";
     }
 }
 
