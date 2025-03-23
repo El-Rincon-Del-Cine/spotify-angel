@@ -1,30 +1,7 @@
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('../sw.js')
-            .then((registration) => {
-                console.log('Service Worker registrado', registration.scope);
-
-                // Solicita permiso para las notificaciones al cargar la página
-                if (Notification.permission === "default") {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === "granted") {
-                            registration.active?.postMessage({ type: 'SHOW_NOTIFICATION' });
-                        }
-                    });
-                } else if (Notification.permission === "granted") {
-                    registration.active?.postMessage({ type: 'SHOW_NOTIFICATION' });
-                }
-            })
-            .catch((error) => {
-                console.log('Error al registrar el Service Worker:', error);
-            });
-    });
-}
-
 const API_KEY = "60a0e5bab7msh8cae9556ead86adp1f39a0jsn34cf68f6923e";
 const API_HOST = "spotify23.p.rapidapi.com";
 
-// Variable global para almacenar los resultados
+// Variable global para almacenar los resultados de la búsqueda
 let searchResults = {
     songs: [],
     albums: [],
@@ -40,7 +17,6 @@ async function searchSpotify() {
     }
 
     const url = `https://${API_HOST}/search/?q=${encodeURIComponent(query)}&type=multi&offset=0&limit=10&numberOfTopResults=5`;
-
     const options = {
         method: "GET",
         headers: {
@@ -52,8 +28,6 @@ async function searchSpotify() {
     try {
         const response = await fetch(url, options);
         const data = await response.json();
-
-        // Verificar estructura de datos
         console.log("Datos recibidos:", data);
 
         // Guardar los resultados en la variable global
@@ -149,10 +123,9 @@ function showResults(type) {
     resultsContainer.innerHTML = html;
 }
 
-// Función para mostrar las canciones populares de un artista
+// Función para obtener y mostrar las canciones populares de un artista
 async function showArtistTopTracks(artistId) {
     const url = `https://${API_HOST}/artist_top_tracks/?id=${artistId}`;
-
     const options = {
         method: "GET",
         headers: {
@@ -164,12 +137,11 @@ async function showArtistTopTracks(artistId) {
     try {
         const response = await fetch(url, options);
         const data = await response.json();
+        console.log("Canciones populares del artista:", data);
 
         const resultsContainer = document.getElementById("resultsContainer");
         let html = "<h3>Canciones Populares</h3>";
-        if (data.tracks.length === 0) {
-            html += "<p>No se encontraron canciones populares.</p>";
-        } else {
+        if (data.tracks && data.tracks.length > 0) {
             html += '<div class="row">';
             data.tracks.forEach(track => {
                 html += `
@@ -185,6 +157,8 @@ async function showArtistTopTracks(artistId) {
                     </div>`;
             });
             html += '</div>';
+        } else {
+            html += "<p>No se encontraron canciones populares para este artista.</p>";
         }
         resultsContainer.innerHTML = html;
     } catch (error) {
@@ -196,7 +170,6 @@ async function showArtistTopTracks(artistId) {
 // Función para mostrar los detalles de un álbum
 async function showAlbumDetails(albumId) {
     const url = `https://${API_HOST}/album_tracks/?id=${albumId}`;
-
     const options = {
         method: "GET",
         headers: {
@@ -208,12 +181,11 @@ async function showAlbumDetails(albumId) {
     try {
         const response = await fetch(url, options);
         const data = await response.json();
+        console.log("Detalles del álbum:", data);
 
         const resultsContainer = document.getElementById("resultsContainer");
         let html = "<h3>Detalles del Álbum</h3>";
-        if (data.items.length === 0) {
-            html += "<p>No se encontraron canciones en este álbum.</p>";
-        } else {
+        if (data.items && data.items.length > 0) {
             html += '<div class="row">';
             data.items.forEach(track => {
                 html += `
@@ -228,15 +200,12 @@ async function showAlbumDetails(albumId) {
                     </div>`;
             });
             html += '</div>';
+        } else {
+            html += "<p>No se encontraron canciones en este álbum.</p>";
         }
         resultsContainer.innerHTML = html;
     } catch (error) {
         console.error("Error al obtener los detalles del álbum:", error);
         resultsContainer.innerHTML = "<p class='text-danger'>Error al obtener los detalles del álbum.</p>";
     }
-}
-
-// Función para reproducir una canción (simulación)
-function playSong(trackId) {
-    alert(`Reproduciendo canción con ID: ${trackId}`);
 }
