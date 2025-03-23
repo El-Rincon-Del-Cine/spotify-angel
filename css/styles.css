@@ -1,122 +1,51 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
 
-body {
-    background: url("../img/2.png") no-repeat center center fixed;
-    background-size: cover; /* Asegura que la imagen cubra toda la página */
-    background-position: center;
-    min-height: 100vh; /* Cubre toda la altura de la pantalla */
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden;
-    display: flex;
-    flex-direction: column;
-    font-family: 'Bebas Neue', sans-serif;
+body, html {
+  height: 100%;
+  margin: 0;
+  font-family: 'Arial', sans-serif;
 }
 
-h1 {
-    font-size: 3rem;
-    text-shadow: 3px 3px 10px #1DB954;
-    animation: glow 2s infinite alternate;
+.app-container {
+  background: url('../img/2.png'); /* Añade tu imagen de fondo */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+  padding: 20px;
+  color: white; /* Texto blanco para contrastar con el fondo */
 }
 
-@keyframes glow {
-    0% { text-shadow: 3px 3px 10px #1DB954; }
-    100% { text-shadow: 3px 3px 20px #1ed760; }
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.input-group {
-    max-width: 600px;
-    margin: auto;
+.animate__fadeIn {
+  animation: fadeIn 0.5s ease-in;
 }
 
-.form-control {
-    border: 2px solid #1DB954;
-    box-shadow: 0px 0px 10px #1DB954;
-    font-size: 1.2rem;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.7);
-}
-
-.btn-custom {
-    background: #1DB954;
-    border: none;
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #000;
-    transition: 0.3s;
-}
-
-.btn-custom:hover {
-    background: #1ed760;
-    box-shadow: 0px 0px 15px #1ed760;
-    transform: scale(1.1);
-}
-
-.nav-tabs .nav-link {
-    color: #fff;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 5px;
-    transition: 0.3s;
-}
-
-.nav-tabs .nav-link.active {
-    background: #1DB954;
-    color: #000;
-}
-
-.tab-content {
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 10px;
-}
-
-.list-group-item {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 1px solid #1DB954;
-    transition: 0.3s;
-}
-
-.list-group-item:hover {
-    background: #1ed760;
-    color: #000;
-}
-
-#songs, #albums, #artists {
-    display: block;
-    flex-wrap: inherit;
-    justify-content: center;
-    gap: 20px;
-}
-
+/* Estilos para tarjetas */
 .card {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    border-radius: 10px;
-    box-shadow: 0px 0px 10px #1DB954;
-    transition: transform 0.3s;
-    color: white;
-}
-
-.card:hover {
-    transform: scale(1.05);
+  background-color: #535353;
+  color: white;
+  margin-bottom: 10px;
+  border: none;
 }
 
 .card img {
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
+  border-radius: 5px;
 }
 
-.card-body {
-    background: rgba(0, 0, 0, 0.6);
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
+.btn-success {
+  background-color: #1DB954;
+  border: none;
 }
 
-@media (max-width: 768px) {
-    body {
-        background-attachment: scroll; /* Evita problemas en móviles */
-        background-size: cover;
-        background-position: center;
-    }
+.btn-success:hover {
+  background-color: #1ed760;
 }
