@@ -70,7 +70,7 @@ function showResults(type) {
                 const artistNames = track.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
                 const spotifyUrl = https://open.spotify.com/track/${track.id}; // URL de la canción en Spotify
 
-                html += 
+                html += `
                     <div class="col-md-4">
                         <div class="card mb-2">
                             <img src="${coverArtUrl}" alt="Album Cover" class="card-img-top">
@@ -81,7 +81,7 @@ function showResults(type) {
                                 <button onclick="playSong('${track.id}')" class="btn btn-sm btn-success">Escuchar</button>
                             </div>
                         </div>
-                    </div>;
+                    </div>`;
             });
             html += '</div>';
         }
@@ -97,7 +97,7 @@ function showResults(type) {
                 const artistNames = albumData.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
                 const albumId = albumData.id;
 
-                html += 
+                html += `
                     <div class="col-md-4">
                         <div class="card mb-2">
                             <img src="${coverArtUrl}" alt="Album Cover" class="card-img-top">
@@ -112,7 +112,7 @@ function showResults(type) {
                             </div>
                             <div id="tracks-${albumId}" class="album-tracks-container" style="display:none;"></div>
                         </div>
-                    </div>;
+                    </div>`;
             });
             html += '</div>';
         }
@@ -127,7 +127,7 @@ function showResults(type) {
                 const imgSrc = artistData.visuals?.avatarImage?.sources?.[0]?.url || "https://via.placeholder.com/150"; // Imagen predeterminada si no hay avatar
                 const artistName = artistData.profile?.name || "Artista desconocido"; // Nombre predeterminado si no hay datos
 
-                html += 
+                html += `
                     <div class="col-md-4">
                         <div class="card mb-2">
                             <img src="${imgSrc}" alt="Artist Image" class="card-img-top">
@@ -136,7 +136,7 @@ function showResults(type) {
                                 <button onclick="showArtistTopTracks('${artistData.uri.split(':')[2]}')" class="btn btn-sm btn-info">Ver Canciones Populares</button>
                             </div>
                         </div>
-                    </div>;
+                    </div>`;
             });
             html += '</div>';
         }
@@ -171,7 +171,7 @@ async function showArtistTopTracks(artistId) {
                 const coverArtUrl = singleData.coverArt?.sources?.[0]?.url || "https://via.placeholder.com/150"; // Imagen predeterminada si no hay coverArt
                 const artistNames = singleData.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido"; // Artista predeterminado si no hay datos
 
-                html += 
+                html += `
                     <div class="col-md-4">
                         <div class="card mb-2">
                             <img src="${coverArtUrl}" alt="Single Cover" class="card-img-top">
@@ -181,7 +181,7 @@ async function showArtistTopTracks(artistId) {
                                 <button onclick="playSong('${singleData.id}')" class="btn btn-sm btn-success">Escuchar</button>
                             </div>
                         </div>
-                    </div>;
+                    </div>`;
             });
             html += '</div>';
         } else {
@@ -195,13 +195,11 @@ async function showArtistTopTracks(artistId) {
 }
 
 // Función para mostrar los detalles de un álbum
+// Función corregida para mostrar las canciones de un álbum
 async function showAlbumTracks(albumId, buttonElement) {
-    const tracksContainer = document.getElementById(`tracks-${albumId}`);
-    if (!tracksContainer) {
-        console.error(`No se encontró el contenedor con ID tracks-${albumId}`);
-        return;
-    }
-
+    const tracksContainer = document.getElementById(tracks-${albumId});
+    
+    // Si ya está mostrando las canciones, las ocultamos
     if (tracksContainer.style.display === "block") {
         tracksContainer.style.display = "none";
         tracksContainer.innerHTML = "";
@@ -209,11 +207,12 @@ async function showAlbumTracks(albumId, buttonElement) {
         return;
     }
 
+    // Mostrar spinner de carga
     tracksContainer.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>';
     tracksContainer.style.display = "block";
     buttonElement.textContent = "Cargando...";
 
-    const url = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`;
+    const url = https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50;
     const options = {
         method: "GET",
         headers: {
@@ -228,36 +227,44 @@ async function showAlbumTracks(albumId, buttonElement) {
         console.log("Pistas del álbum:", data);
 
         let tracksHtml = '<div class="list-group list-group-flush">';
-
-        if (data.data?.album?.tracks?.items?.length > 0) {
+        
+        // Estructura corregida según la respuesta de la API
+        if (data.data && data.data.album && data.data.album.tracks && data.data.album.tracks.items) {
             data.data.album.tracks.items.forEach((item, index) => {
                 const track = item.track;
-                if (!track) return;
-
-                const durationMs = track.duration?.totalMilliseconds || 0;
+                const durationMs = track.duration && track.duration.totalMilliseconds ? track.duration.totalMilliseconds : 0;
                 const duration = new Date(durationMs).toISOString().substr(14, 5);
-                const trackId = track.uri?.split(':')[2] || '';
-
+                const trackId = track.uri ? track.uri.split(':')[2] : '';
+                
                 tracksHtml += `
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="badge bg-secondary me-2">${index + 1}</span>
-                            ${track.name || "Pista desconocida"}
-                            <small class="text-muted ms-2">${duration}</small>
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-secondary me-2">${index + 1}</span>
+                                ${track.name || "Pista desconocida"}
+                                <small class="text-muted ms-2">${duration}</small>
+                            </div>
+                            ${trackId ? `<button onclick="playSong('${trackId}')" 
+                                    class="btn btn-sm btn-outline-success">
+                                Escuchar
+                            </button>` : ''}
                         </div>
-                        ${trackId ? `<button onclick="playSong('${trackId}')" class="btn btn-sm btn-outline-success">▶</button>` : ''}
                     </div>`;
             });
         } else {
             tracksHtml += '<div class="list-group-item">No se encontraron pistas en este álbum.</div>';
         }
-
+        
         tracksHtml += '</div>';
         tracksContainer.innerHTML = tracksHtml;
         buttonElement.textContent = "Ocultar canciones";
     } catch (error) {
         console.error("Error al obtener las pistas del álbum:", error);
-        tracksContainer.innerHTML = `<div class="alert alert-danger">Error al cargar pistas.</div>`;
+        tracksContainer.innerHTML = `
+            <div class="alert alert-danger">
+                Error al cargar las pistas: ${error.message}
+                <br><small>Endpoint usado: ${url}</small>
+            </div>`;
         buttonElement.textContent = "Intentar de nuevo";
     }
 }
