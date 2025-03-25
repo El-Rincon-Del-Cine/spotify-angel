@@ -209,12 +209,15 @@ async function showAlbumDetails(albumId) {
         const resultsContainer = document.getElementById("resultsContainer");
         let html = "<h3>Detalles del Álbum</h3>";
 
-        // Mostrar la información del álbum
+        // Obtener las canciones correctamente
+        const tracks = data.data?.album?.tracks?.items || [];
+
+        // Mostrar información del álbum
         const album = searchResults.albums.find(album => album.data.id === albumId);
         if (album) {
             const albumData = album.data;
-            const coverArtUrl = albumData.coverArt?.sources?.[0]?.url || "https://via.placeholder.com/150"; // Imagen predeterminada si no hay coverArt
-            const artistNames = albumData.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido"; // Artista predeterminado si no hay datos
+            const coverArtUrl = albumData.coverArt?.sources?.[0]?.url || "https://via.placeholder.com/150";
+            const artistNames = albumData.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
 
             html += `
                 <div class="row">
@@ -232,9 +235,9 @@ async function showAlbumDetails(albumId) {
         }
 
         // Mostrar las pistas del álbum
-        if (data.items && data.items.length > 0) {
+        if (tracks.length > 0) {
             html += '<div class="row">';
-            data.items.forEach(track => {
+            tracks.forEach(track => {
                 const trackName = track.name || "Canción desconocida";
                 const artistNames = track.artists?.map(artist => artist.name).join(", ") || "Artista desconocido";
 
@@ -244,7 +247,7 @@ async function showAlbumDetails(albumId) {
                             <div class="card-body">
                                 <h5 class="card-title">${trackName}</h5>
                                 <p class="card-text">Artista: ${artistNames}</p>
-                                <button onclick="playSong('${track.id}')" class="btn btn-sm btn-success">Escuchar</button>
+                                <button onclick="playSong('${track.id || track.data?.id}')" class="btn btn-sm btn-success">Escuchar</button>
                             </div>
                         </div>
                     </div>`;
