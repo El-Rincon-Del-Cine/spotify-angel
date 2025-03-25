@@ -225,23 +225,35 @@ async function getArtistTopSongs(artistId, artistName) {
 }
 
 // Función para obtener canciones de un álbum
+// Función corregida para obtener canciones de un álbum
 async function getAlbumTracks(albumId) {
     const resultsContainer = document.getElementById("resultsContainer");
     resultsContainer.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p class="mt-2">Cargando canciones...</p></div>';
 
-    const url = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`;
-    const options = {
-        method: "GET",
-        headers: {
-            "x-rapidapi-key": API_KEY,
-            "x-rapidapi-host": API_HOST
-        }
-    };
-
     try {
-        const response = await fetch(url, options);
-        const data = await response.json();
-        console.log("Pistas del álbum:", data);
+        // Primero obtenemos los metadatos del álbum para el nombre
+        const metadataUrl = `https://${API_HOST}/album_metadata/?id=${albumId}`;
+        const tracksUrl = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`;
+        
+        const options = {
+            method: "GET",
+            headers: {
+                "x-rapidapi-key": API_KEY,
+                "x-rapidapi-host": API_HOST
+            }
+        };
+
+        // Hacemos ambas peticiones en paralelo
+        const [metadataResponse, tracksResponse] = await Promise.all([
+            fetch(metadataUrl, options),
+            fetch(tracksUrl, options)
+        ]);
+
+        const metadata = await metadataResponse.json();
+        const tracksData = await tracksResponse.json();
+
+        console.log("Metadatos del álbum:", metadata);
+        console.log("Pistas del álbum:", tracksData);
 
         let html = `
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -250,11 +262,33 @@ async function getAlbumTracks(albumId) {
                     <i class="fas fa-arrow-left"></i> Volver
                 </button>
             </div>
-            <div class="list-group">
         `;
+
+        // Mostrar información del álbum
+        if (metadata.data?.album) {
+            const album = metadata.data.album;
+            const coverArtUrl = getOptimizedImageUrl(album.coverArt?.sources?.[0]?.url);
+            const artistNames = album.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
+
+            html += `
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <img src="${coverArtUrl}" class="img-fluid rounded" alt="Portada del álbum">
+                    </div>
+                    <div class="col-md-9">
+                        <h4>${album.name || "Álbum desconocido"}</h4>
+                        <p class="text-muted">${artistNames}</p>
+                        <p>${album.date?.year || ""} • ${album.tracks?.totalCount || 0} canciones</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Mostrar lista de canciones
+        html += '<div class="list-group">';
         
-        if (data.data?.album?.tracks?.items) {
-            data.data.album.tracks.items.forEach((item, index) => {
+        if (tracksData.data?.album?.tracks?.items) {
+            tracksData.data.album.tracks.items.forEach((item, index) => {
                 const track = item.track;
                 const duration = formatDuration(track.duration?.totalMilliseconds);
                 const trackId = track.uri?.split(':')[2] || '';
@@ -267,9 +301,11 @@ async function getAlbumTracks(albumId) {
                                 <strong>${track.name || "Pista desconocida"}</strong>
                                 <small class="text-muted ms-2">${duration}</small>
                             </div>
-                            <button onclick="playSong('${trackId}')" class="btn btn-sm btn-outline-success">
-                                <i class="fas fa-play"></i>
-                            </button>
+                            <div>
+                                <button onclick="playSong('${trackId}')" class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-play"></i> Escuchar
+                                </button>
+                            </div>
                         </div>
                     </div>`;
             });
@@ -279,12 +315,81 @@ async function getAlbumTracks(albumId) {
         
         html += '</div>';
         resultsContainer.innerHTML = html;
+        
     } catch (error) {
         console.error("Error al obtener las pistas del álbum:", error);
         resultsContainer.innerHTML = `
             <div class="alert alert-danger">
                 Error al cargar las pistas: ${error.message}
                 <button onclick="showResults('albums')" class="btn btn-outline-secondary mt-2">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+            </div>
+        `;
+    }
+}
+
+// Función para mostrar álbumes de un artista
+async function getArtistAlbums(artistId, artistName) {
+    const resultsContainer = document.getElementById("resultsContainer");
+    resultsContainer.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p class="mt-2">Cargando álbumes...</p></div>';
+
+    try {
+        const url = `https://${API_HOST}/artist_albums/?id=${artistId}&offset=0&limit=100`;
+        const options = {
+            method: "GET",
+            headers: {
+                "x-rapidapi-key": API_KEY,
+                "x-rapidapi-host": API_HOST
+            }
+        };
+
+        const response = await fetch(url, options);
+        const data = await response.json();
+        console.log("Álbumes del artista:", data);
+
+        let html = `
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>Álbumes de ${artistName}</h3>
+                <button onclick="showResults('artists')" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+            </div>
+            <div class="row row-cols-2 row-cols-md-4 g-4">
+        `;
+
+        if (data.data?.artist?.discography?.albums?.items) {
+            data.data.artist.discography.albums.items.forEach(item => {
+                const album = item.releases.items[0];
+                const coverArtUrl = getOptimizedImageUrl(album.coverArt?.sources?.[0]?.url);
+                const albumId = album.id;
+
+                html += `
+                    <div class="col">
+                        <div class="card h-100">
+                            <img src="${coverArtUrl}" class="card-img-top img-square" alt="Portada del álbum">
+                            <div class="card-body">
+                                <h6 class="card-title">${album.name || "Álbum desconocido"}</h6>
+                                <p class="card-text small">${album.date?.year || ""}</p>
+                                <button onclick="getAlbumTracks('${albumId}')" class="btn btn-sm btn-primary w-100 mt-2">
+                                    <i class="fas fa-list"></i> Canciones
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        } else {
+            html = '<div class="alert alert-info w-100">No se encontraron álbumes para este artista.</div>';
+        }
+
+        html += '</div>';
+        resultsContainer.innerHTML = html;
+    } catch (error) {
+        console.error("Error al obtener álbumes del artista:", error);
+        resultsContainer.innerHTML = `
+            <div class="alert alert-danger">
+                Error al cargar los álbumes: ${error.message}
+                <button onclick="showResults('artists')" class="btn btn-outline-secondary mt-2">
                     <i class="fas fa-arrow-left"></i> Volver
                 </button>
             </div>
