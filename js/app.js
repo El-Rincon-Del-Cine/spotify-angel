@@ -199,15 +199,14 @@ function showArtistsResults() {
     container.innerHTML = html;
 }
 
-// Función CORREGIDA para obtener detalles del álbum
+// Función para obtener detalles del álbum
 async function getAlbumDetails(albumId) {
     const container = document.getElementById("resultsContainer");
     container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p class="mt-2">Cargando álbum...</p></div>';
 
     try {
-        // Usamos el endpoint de metadata para obtener información básica
+        // Primero obtenemos los metadatos del álbum
         const metadataUrl = `https://${API_HOST}/album_metadata/?id=${albumId}`;
-        // Y el endpoint de tracks para obtener las canciones
         const tracksUrl = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`;
         
         const options = {
@@ -227,9 +226,7 @@ async function getAlbumDetails(albumId) {
         const metadata = await metadataResponse.json();
         const tracksData = await tracksResponse.json();
 
-        console.log("Metadatos del álbum:", metadata);
-        console.log("Pistas del álbum:", tracksData);
-
+        // Construimos el HTML para mostrar la información
         let html = `
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3>Detalles del Álbum</h3>
@@ -239,7 +236,7 @@ async function getAlbumDetails(albumId) {
             </div>
         `;
 
-        // Mostrar información del álbum
+        // Mostrar información básica del álbum
         if (metadata.data?.album) {
             const album = metadata.data.album;
             const coverArtUrl = getOptimizedImageUrl(album.coverArt?.sources?.[0]?.url);
@@ -254,16 +251,16 @@ async function getAlbumDetails(albumId) {
                     <div class="col-md-9">
                         <h4>${album.name || "Álbum desconocido"}</h4>
                         <p class="text-muted">${artistNames}</p>
-                        <a href="${spotifyUrl}" target="_blank" class="btn btn-outline-primary btn-sm mb-2">
+                        <p>${album.date?.year || ""}</p>
+                        <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary mb-2">
                             <i class="fab fa-spotify"></i> Ver en Spotify
                         </a>
-                        <p>${album.date?.year || ""}</p>
                     </div>
                 </div>
             `;
         }
 
-        // Mostrar pistas del álbum
+        // Mostrar las pistas del álbum
         html += '<h4 class="mb-3">Canciones</h4><div class="list-group">';
         
         if (tracksData.data?.album?.tracks?.items) {
