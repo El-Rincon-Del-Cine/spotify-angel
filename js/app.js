@@ -16,7 +16,7 @@ async function searchSpotify() {
         return;
     }
 
-    const url = https://${API_HOST}/search/?q=${encodeURIComponent(query)}&type=multi&offset=0&limit=10&numberOfTopResults=5;
+    const url = `https://${API_HOST}/search/?q=${encodeURIComponent(query)}&type=multi&offset=0&limit=10&numberOfTopResults=5`;
     const options = {
         method: "GET",
         headers: {
@@ -68,7 +68,7 @@ function showResults(type) {
                 const track = song.data;
                 const coverArtUrl = track.albumOfTrack?.coverArt?.sources?.[0]?.url || "https://via.placeholder.com/150";
                 const artistNames = track.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
-                const spotifyUrl = https://open.spotify.com/track/${track.id}; // URL de la canción en Spotify
+                const spotifyUrl = `https://open.spotify.com/track/${track.id}`; // URL de la canción en Spotify
 
                 html += `
                     <div class="col-md-4">
@@ -147,7 +147,7 @@ function showResults(type) {
 
 // Función para obtener y mostrar las canciones populares de un artista
 async function showArtistTopTracks(artistId) {
-    const url = https://${API_HOST}/artist_singles/?id=${artistId}&offset=0&limit=20;
+    const url = `https://${API_HOST}/artist_singles/?id=${artistId}&offset=0&limit=20`;
     const options = {
         method: "GET",
         headers: {
@@ -211,7 +211,7 @@ async function showAlbumTracks(albumId, buttonElement) {
     tracksContainer.style.display = "block";
     buttonElement.textContent = "Cargando...";
 
-    const url = https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50;
+    const url = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`;
     const options = {
         method: "GET",
         headers: {
