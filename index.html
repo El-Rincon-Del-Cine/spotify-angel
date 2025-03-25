@@ -4,112 +4,196 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotify Search</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --spotify-green: #1DB954;
+            --spotify-dark: #191414;
+            --spotify-light: #FFFFFF;
+        }
+        
         body {
             background-color: #f8f9fa;
+            font-family: 'Circular', Helvetica, Arial, sans-serif;
         }
-        .btn-custom {
-            background-color: #1DB954;
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--spotify-green) !important;
+        }
+        
+        .btn-spotify {
+            background-color: var(--spotify-green);
             color: white;
+            font-weight: 600;
+            border-radius: 500px;
+            padding: 12px 32px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border: none;
         }
-        .btn-custom:hover {
+        
+        .btn-spotify:hover {
             background-color: #1ed760;
             color: white;
+            transform: scale(1.05);
         }
-        .nav-tabs .nav-link.active {
-            color: #1DB954;
-            font-weight: bold;
-            border-bottom: 3px solid #1DB954;
+        
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto;
         }
+        
+        .search-input {
+            border-radius: 500px;
+            padding: 12px 24px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+        
+        .nav-tabs {
+            border-bottom: none;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        
         .nav-tabs .nav-link {
-            color: #495057;
-            cursor: pointer;
+            color: #6c757d;
+            border: none;
+            font-weight: 500;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 500px;
         }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--spotify-green);
+            background-color: rgba(29, 185, 84, 0.1);
+            font-weight: 700;
+        }
+        
         .card {
-            transition: all 0.3s ease;
             border: none;
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
+        
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         }
-        #searchInput {
-            border-radius: 20px;
-            padding: 10px 20px;
+        
+        .card-img-top {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
         }
-        .input-group {
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-radius: 20px;
+        
+        .list-group-item {
+            border-left: none;
+            border-right: none;
+            padding: 15px 20px;
+        }
+        
+        .list-group-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-tabs .nav-link {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+            
+            .card-img-top {
+                height: 120px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container py-5">
-        <div class="text-center mb-4">
-            <i class="fab fa-spotify fa-3x mb-3" style="color: #1DB954;"></i>
-            <h1 class="fw-bold">Spotify Search</h1>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fab fa-spotify me-2"></i>Spotify Search
+            </a>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <div class="text-center mb-5">
+            <h1 class="fw-bold mb-3">Descubre música en Spotify</h1>
             <p class="text-muted">Encuentra tus artistas, álbumes y canciones favoritas</p>
         </div>
 
-        <!-- Barra de búsqueda mejorada -->
-        <div class="row justify-content-center mb-4">
-            <div class="col-md-8">
-                <div class="input-group">
-                    <input type="text" id="searchInput" class="form-control" 
-                           placeholder="Busca una canción, artista o álbum..." 
-                           aria-label="Buscar en Spotify"
-                           onkeypress="if(event.key === 'Enter') searchSpotify()">
-                    <button class="btn btn-custom" type="button" onclick="searchSpotify()">
-                        <i class="fas fa-search me-2"></i>Buscar
-                    </button>
-                </div>
+        <!-- Barra de búsqueda -->
+        <div class="search-container mb-5">
+            <div class="input-group">
+                <input type="text" id="searchInput" class="form-control search-input" 
+                       placeholder="Buscar artistas, canciones o álbumes..." 
+                       aria-label="Buscar en Spotify"
+                       onkeypress="if(event.key === 'Enter') searchSpotify()">
+                <button class="btn btn-spotify ms-2" type="button" onclick="searchSpotify()">
+                    <i class="fas fa-search me-2"></i>Buscar
+                </button>
             </div>
         </div>
 
-        <!-- Pestañas de resultados mejoradas -->
-        <div class="mb-4">
-            <ul class="nav nav-tabs justify-content-center" id="resultsTab" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="songs-tab" data-bs-toggle="tab" 
-                            data-bs-target="#songs" type="button" role="tab" 
-                            onclick="showResults('songs')">
-                        <i class="fas fa-music me-2"></i>Canciones
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="albums-tab" data-bs-toggle="tab" 
-                            data-bs-target="#albums" type="button" role="tab" 
-                            onclick="showResults('albums')">
-                        <i class="fas fa-compact-disc me-2"></i>Álbumes
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="artists-tab" data-bs-toggle="tab" 
-                            data-bs-target="#artists" type="button" role="tab" 
-                            onclick="showResults('artists')">
-                        <i class="fas fa-user me-2"></i>Artistas
-                    </button>
-                </li>
-            </ul>
-        </div>
+        <!-- Pestañas de resultados -->
+        <ul class="nav nav-tabs" id="resultsTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="songs-tab" data-bs-toggle="tab" 
+                        data-bs-target="#songs" type="button" role="tab" 
+                        onclick="showResults('songs')">
+                    <i class="fas fa-music me-2"></i>Canciones
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="albums-tab" data-bs-toggle="tab" 
+                        data-bs-target="#albums" type="button" role="tab" 
+                        onclick="showResults('albums')">
+                    <i class="fas fa-compact-disc me-2"></i>Álbumes
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="artists-tab" data-bs-toggle="tab" 
+                        data-bs-target="#artists" type="button" role="tab" 
+                        onclick="showResults('artists')">
+                    <i class="fas fa-user me-2"></i>Artistas
+                </button>
+            </li>
+        </ul>
 
-        <!-- Contenedor de resultados dinámicos -->
-        <div id="resultsContainer" class="tab-content">
-            <div class="tab-pane fade show active" id="songs" role="tabpanel" aria-labelledby="songs-tab"></div>
-            <div class="tab-pane fade" id="albums" role="tabpanel" aria-labelledby="albums-tab"></div>
-            <div class="tab-pane fade" id="artists" role="tabpanel" aria-labelledby="artists-tab"></div>
+        <!-- Contenedor de resultados -->
+        <div id="resultsContainer" class="tab-content mt-4">
+            <div class="tab-pane fade show active" id="songs" role="tabpanel" aria-labelledby="songs-tab">
+                <!-- Las canciones se cargarán aquí dinámicamente -->
+            </div>
+            <div class="tab-pane fade" id="albums" role="tabpanel" aria-labelledby="albums-tab">
+                <!-- Los álbumes se cargarán aquí dinámicamente -->
+            </div>
+            <div class="tab-pane fade" id="artists" role="tabpanel" aria-labelledby="artists-tab">
+                <!-- Los artistas se cargarán aquí dinámicamente -->
+            </div>
         </div>
-
-        <!-- Footer -->
-        <footer class="mt-5 text-center text-muted">
-            <p>© 2023 Spotify Search. No afiliado a Spotify.</p>
-        </footer>
     </div>
+
+    <footer class="text-center">
+        <div class="container">
+            <p>© 2023 Spotify Search. Esta aplicación no está afiliada a Spotify.</p>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
