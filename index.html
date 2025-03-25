@@ -14,8 +14,15 @@
         }
         
         body {
-            background-color: #f8f9fa;
+            background-color: #000000; /* Fondo negro */
+            color: #ffffff; /* Texto blanco */
             font-family: 'Circular', Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background-color: #000000 !important;
+            border-bottom: 1px solid #333;
         }
         
         .navbar-brand {
@@ -32,6 +39,7 @@
             letter-spacing: 1px;
             text-transform: uppercase;
             border: none;
+            transition: all 0.3s ease;
         }
         
         .btn-spotify:hover {
@@ -48,8 +56,17 @@
         .search-input {
             border-radius: 500px;
             padding: 12px 24px;
-            border: 1px solid #ddd;
+            border: 1px solid #333;
             font-size: 16px;
+            background-color: #121212;
+            color: white;
+        }
+        
+        .search-input:focus {
+            background-color: #121212;
+            color: white;
+            border-color: var(--spotify-green);
+            box-shadow: 0 0 0 0.25rem rgba(29, 185, 84, 0.25);
         }
         
         .nav-tabs {
@@ -59,17 +76,24 @@
         }
         
         .nav-tabs .nav-link {
-            color: #6c757d;
+            color: #b3b3b3;
             border: none;
             font-weight: 500;
             padding: 10px 20px;
             margin: 0 5px;
             border-radius: 500px;
+            background-color: transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            color: white;
+            background-color: #282828;
         }
         
         .nav-tabs .nav-link.active {
-            color: var(--spotify-green);
-            background-color: rgba(29, 185, 84, 0.1);
+            color: white;
+            background-color: #282828;
             font-weight: 700;
         }
         
@@ -78,13 +102,13 @@
             border-radius: 10px;
             overflow: hidden;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background-color: #181818;
             margin-bottom: 20px;
         }
         
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            background-color: #282828;
         }
         
         .card-img-top {
@@ -93,21 +117,56 @@
             object-fit: cover;
         }
         
+        .card-title {
+            color: white;
+            font-weight: 600;
+        }
+        
+        .card-text {
+            color: #b3b3b3;
+        }
+        
         .list-group-item {
             border-left: none;
             border-right: none;
             padding: 15px 20px;
+            background-color: #181818;
+            color: white;
+            border-color: #333;
         }
         
         .list-group-item:hover {
-            background-color: #f8f9fa;
+            background-color: #282828;
         }
         
         footer {
             margin-top: 50px;
             padding: 20px 0;
-            color: #6c757d;
+            color: #b3b3b3;
             font-size: 14px;
+            border-top: 1px solid #333;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: white;
+        }
+        
+        .text-muted {
+            color: #b3b3b3 !important;
+        }
+        
+        .alert {
+            background-color: #282828;
+            color: white;
+            border: none;
+        }
+        
+        .alert-danger {
+            background-color: #3e1e1e;
+        }
+        
+        .alert-info {
+            background-color: #1e3e3e;
         }
         
         @media (max-width: 768px) {
@@ -119,11 +178,16 @@
             .card-img-top {
                 height: 120px;
             }
+            
+            .btn-spotify {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-light shadow-sm">
         <div class="container">
             <a class="navbar-brand" href="#">
                 <i class="fab fa-spotify me-2"></i>Spotify Search
@@ -179,17 +243,29 @@
         <div id="resultsContainer" class="tab-content mt-4">
             <div class="tab-pane fade show active" id="songs" role="tabpanel" aria-labelledby="songs-tab">
                 <!-- Las canciones se cargarán aquí dinámicamente -->
+                <div class="text-center py-5">
+                    <i class="fas fa-music fa-3x mb-3 text-muted"></i>
+                    <p class="text-muted">Realiza una búsqueda para ver canciones</p>
+                </div>
             </div>
             <div class="tab-pane fade" id="albums" role="tabpanel" aria-labelledby="albums-tab">
                 <!-- Los álbumes se cargarán aquí dinámicamente -->
+                <div class="text-center py-5">
+                    <i class="fas fa-compact-disc fa-3x mb-3 text-muted"></i>
+                    <p class="text-muted">Realiza una búsqueda para ver álbumes</p>
+                </div>
             </div>
             <div class="tab-pane fade" id="artists" role="tabpanel" aria-labelledby="artists-tab">
                 <!-- Los artistas se cargarán aquí dinámicamente -->
+                <div class="text-center py-5">
+                    <i class="fas fa-user fa-3x mb-3 text-muted"></i>
+                    <p class="text-muted">Realiza una búsqueda para ver artistas</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <footer class="text-center">
+    <footer>
         <div class="container">
             <p>© 2023 Spotify Search. Esta aplicación no está afiliada a Spotify.</p>
         </div>
