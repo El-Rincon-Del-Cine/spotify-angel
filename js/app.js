@@ -66,8 +66,9 @@ function showResults(type) {
             html += '<div class="row">';
             searchResults.songs.forEach(song => {
                 const track = song.data;
-                const coverArtUrl = track.albumOfTrack?.coverArt?.sources?.[0]?.url || "https://via.placeholder.com/150"; // Imagen predeterminada si no hay coverArt
-                const artistNames = track.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido"; // Artista predeterminado si no hay datos
+                const coverArtUrl = track.albumOfTrack?.coverArt?.sources?.[0]?.url || "https://via.placeholder.com/150";
+                const artistNames = track.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
+                const spotifyUrl = `https://open.spotify.com/track/${track.id}`; // URL de la canción en Spotify
 
                 html += `
                     <div class="col-md-4">
@@ -76,6 +77,7 @@ function showResults(type) {
                             <div class="card-body">
                                 <h5 class="card-title">${track.name || "Canción desconocida"}</h5>
                                 <p class="card-text">Artista: ${artistNames}</p>
+                                <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-primary">Ver en Spotify</a>
                                 <button onclick="playSong('${track.id}')" class="btn btn-sm btn-success">Escuchar</button>
                             </div>
                         </div>
@@ -192,7 +194,9 @@ async function showArtistTopTracks(artistId) {
 
 // Función para mostrar los detalles de un álbum
 async function showAlbumDetails(albumId) {
-    const url = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=300`;
+    const url = `https://${API_HOST}/album_metadata/?id=${albumId}`;
+    const tracksUrl = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`;
+    
     const options = {
         method: "GET",
         headers: {
@@ -202,52 +206,67 @@ async function showAlbumDetails(albumId) {
     };
 
     try {
-        const response = await fetch(url, options);
-        const data = await response.json();
-        console.log("Detalles del álbum:", data);
+        // Obtener metadatos del álbum
+        const [metadataResponse, tracksResponse] = await Promise.all([
+            fetch(url, options),
+            fetch(tracksUrl, options)
+        ]);
+        
+        const metadata = await metadataResponse.json();
+        const tracksData = await tracksResponse.json();
+        
+        console.log("Metadatos del álbum:", metadata);
+        console.log("Pistas del álbum:", tracksData);
 
         const resultsContainer = document.getElementById("resultsContainer");
         let html = "<h3>Detalles del Álbum</h3>";
 
-        // Obtener las canciones correctamente
-        const tracks = data.data?.album?.tracks?.items || [];
-
         // Mostrar información del álbum
-        const album = searchResults.albums.find(album => album.data.id === albumId);
-        if (album) {
-            const albumData = album.data;
+        if (metadata.data && metadata.data.album) {
+            const albumData = metadata.data.album;
             const coverArtUrl = albumData.coverArt?.sources?.[0]?.url || "https://via.placeholder.com/150";
             const artistNames = albumData.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
+            const spotifyUrl = `https://open.spotify.com/album/${albumId}`;
 
             html += `
-                <div class="row">
+                <div class="row mb-4">
                     <div class="col-md-4">
-                        <div class="card mb-2">
+                        <div class="card">
                             <img src="${coverArtUrl}" alt="Album Cover" class="card-img-top">
                             <div class="card-body">
                                 <h5 class="card-title">${albumData.name || "Álbum desconocido"}</h5>
                                 <p class="card-text">Artista: ${artistNames}</p>
-                                <p class="card-text">Año: ${albumData.date?.year || "Desconocido"}</p>
+                                <p class="card-text">Fecha: ${albumData.date?.year || "Desconocido"}</p>
+                                <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-primary">Ver en Spotify</a>
                             </div>
                         </div>
                     </div>
                 </div>`;
         }
 
-        // Mostrar las pistas del álbum
-        if (tracks.length > 0) {
-            html += '<div class="row">';
-            tracks.forEach(track => {
-                const trackName = track.name || "Canción desconocida";
-                const artistNames = track.artists?.map(artist => artist.name).join(", ") || "Artista desconocido";
+        // Mostrar pistas del álbum
+        html += "<h4>Pistas</h4>";
+        if (tracksData.data && tracksData.data.album && tracksData.data.album.tracks && tracksData.data.album.tracks.items) {
+            const tracks = tracksData.data.album.tracks.items;
+            
+            html += '<div class="list-group">';
+            tracks.forEach((track, index) => {
+                const trackData = track.track;
+                const durationMs = trackData.duration.totalMilliseconds || 0;
+                const duration = new Date(durationMs).toISOString().substr(14, 5);
+                const spotifyUrl = `https://open.spotify.com/track/${trackData.uri.split(':')[2]}`;
 
                 html += `
-                    <div class="col-md-4">
-                        <div class="card mb-2">
-                            <div class="card-body">
-                                <h5 class="card-title">${trackName}</h5>
-                                <p class="card-text">Artista: ${artistNames}</p>
-                                <button onclick="playSong('${track.id || track.data?.id}')" class="btn btn-sm btn-success">Escuchar</button>
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-secondary me-2">${index + 1}</span>
+                                <strong>${trackData.name || "Pista desconocida"}</strong>
+                                <span class="text-muted ms-2">${duration}</span>
+                            </div>
+                            <div>
+                                <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary me-2">Spotify</a>
+                                <button onclick="playSong('${trackData.uri.split(':')[2]}')" class="btn btn-sm btn-success">Escuchar</button>
                             </div>
                         </div>
                     </div>`;
@@ -260,7 +279,7 @@ async function showAlbumDetails(albumId) {
         resultsContainer.innerHTML = html;
     } catch (error) {
         console.error("Error al obtener los detalles del álbum:", error);
-        resultsContainer.innerHTML = "<p class='text-danger'>Error al obtener los detalles del álbum.</p>";
+        resultsContainer.innerHTML = `<p class='text-danger'>Error al obtener los detalles del álbum: ${error.message}</p>`;
     }
 }
 
