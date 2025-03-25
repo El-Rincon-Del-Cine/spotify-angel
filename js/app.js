@@ -107,6 +107,7 @@ function showResults(type) {
     } else if (type === "artists") {
         showArtistsResults();
     }
+    resultsContainer.innerHTML = html;
 }
 
 // Mostrar canciones
