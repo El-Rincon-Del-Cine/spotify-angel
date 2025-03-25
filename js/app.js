@@ -246,7 +246,7 @@ async function getArtistTopTracks(artistId, artistName) {
         </div>
     `;
 
-    const url = `https://${API_HOST}/artist_top_tracks/?id=${artistId}`;
+    const url = `https://${API_HOST}/artist_singles/?id=${artistId}`;
     const options = {
         method: "GET",
         headers: {
