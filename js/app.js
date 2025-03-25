@@ -195,7 +195,6 @@ async function showArtistTopTracks(artistId) {
 }
 
 // Función para mostrar los detalles de un álbum
-// Función corregida para mostrar las canciones de un álbum
 async function showAlbumTracks(albumId, buttonElement) {
     const tracksContainer = document.getElementById(tracks-${albumId});
     
@@ -228,13 +227,11 @@ async function showAlbumTracks(albumId, buttonElement) {
 
         let tracksHtml = '<div class="list-group list-group-flush">';
         
-        // Estructura corregida según la respuesta de la API
-        if (data.data && data.data.album && data.data.album.tracks && data.data.album.tracks.items) {
+        if (data.data?.album?.tracks?.items) {
             data.data.album.tracks.items.forEach((item, index) => {
                 const track = item.track;
-                const durationMs = track.duration && track.duration.totalMilliseconds ? track.duration.totalMilliseconds : 0;
+                const durationMs = track.duration?.totalMilliseconds || 0;
                 const duration = new Date(durationMs).toISOString().substr(14, 5);
-                const trackId = track.uri ? track.uri.split(':')[2] : '';
                 
                 tracksHtml += `
                     <div class="list-group-item">
@@ -244,10 +241,10 @@ async function showAlbumTracks(albumId, buttonElement) {
                                 ${track.name || "Pista desconocida"}
                                 <small class="text-muted ms-2">${duration}</small>
                             </div>
-                            ${trackId ? `<button onclick="playSong('${trackId}')" 
+                            <button onclick="playSong('${track.uri.split(':')[2]}')" 
                                     class="btn btn-sm btn-outline-success">
                                 Escuchar
-                            </button>` : ''}
+                            </button>
                         </div>
                     </div>`;
             });
@@ -260,12 +257,8 @@ async function showAlbumTracks(albumId, buttonElement) {
         buttonElement.textContent = "Ocultar canciones";
     } catch (error) {
         console.error("Error al obtener las pistas del álbum:", error);
-        tracksContainer.innerHTML = `
-            <div class="alert alert-danger">
-                Error al cargar las pistas: ${error.message}
-                <br><small>Endpoint usado: ${url}</small>
-            </div>`;
-        buttonElement.textContent = "Intentar de nuevo";
+        tracksContainer.innerHTML = '<div class="alert alert-danger">Error al cargar las pistas</div>';
+        buttonElement.textContent = "Mostrar canciones";
     }
 }
 
