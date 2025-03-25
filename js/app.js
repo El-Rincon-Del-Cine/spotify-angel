@@ -1,4 +1,4 @@
-const API_KEY = "60a0e5bab7msh8cae9556ead86adp1f39a0jsn34cf68f6923e";
+.const API_KEY = "60a0e5bab7msh8cae9556ead86adp1f39a0jsn34cf68f6923e";
 const API_HOST = "spotify23.p.rapidapi.com";
 
 // Variable global para almacenar los resultados de la búsqueda
