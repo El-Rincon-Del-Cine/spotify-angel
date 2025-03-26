@@ -316,7 +316,11 @@ async function getAlbumTracks(albumId, artistName, artistId) {
     container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p>Cargando canciones...</p></div>';
 
     try {
-        const url = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`;
+        // Primero obtenemos los metadatos del álbum para la portada
+        const metadataUrl = `https://${API_HOST}/albums/?ids=${albumId}`;
+        // Luego las pistas del álbum
+        const tracksUrl = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`;
+        
         const options = {
             method: "GET",
             headers: {
@@ -325,11 +329,23 @@ async function getAlbumTracks(albumId, artistName, artistId) {
             }
         };
 
-        const response = await fetch(url, options);
-        const data = await response.json();
+        // Hacemos ambas peticiones en paralelo
+        const [metadataResponse, tracksResponse] = await Promise.all([
+            fetch(metadataUrl, options),
+            fetch(tracksUrl, options)
+        ]);
 
-        const albumData = data.data?.album;
-        const coverArtUrl = getOptimizedImageUrl(albumData?.coverArt?.sources?.[0]?.url);
+        const [metadata, tracksData] = await Promise.all([
+            metadataResponse.json(),
+            tracksResponse.json()
+        ]);
+
+        // Obtenemos la portada del álbum
+        const albumCover = metadata.albums?.[0]?.images?.[0]?.url || 
+                         tracksData.data?.album?.coverArt?.sources?.[0]?.url;
+
+        const albumData = tracksData.data?.album;
+        const coverArtUrl = getOptimizedImageUrl(albumCover, 300);
 
         let html = `
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -343,6 +359,7 @@ async function getAlbumTracks(albumId, artistName, artistId) {
                     <img src="${coverArtUrl}" class="img-fluid rounded shadow" alt="Portada del álbum">
                     <h5 class="mt-3">${albumData?.name || 'Álbum'}</h5>
                     <p class="text-muted">${artistName}</p>
+                    ${albumData?.date?.year ? `<p class="text-muted">${albumData.date.year}</p>` : ''}
                 </div>
                 <div class="col-md-9">
                     <div class="list-group">
@@ -400,12 +417,12 @@ async function getAlbumTracks(albumId, artistName, artistId) {
     }
 }
 
-// Función para reproducir canción
+// Función para simular la reproducción de la canción, aunque en si fue para obtener las id para las pruebas
 function playSong(trackId) {
     alert(`Reproduciendo canción con ID: ${trackId}\n\nEn una implementación real, aquí se integraría con la API de Spotify`);
 }
 
-// Función para mostrar "no hay resultados"
+// Función para cuando un resultado no existe
 function showNoResults() {
     document.getElementById("resultsContainer").innerHTML = `
         <div class="alert alert-info">
@@ -414,7 +431,7 @@ function showNoResults() {
     `;
 }
 
-// Añadir estilos CSS
+// Estilos para las imagenes y tarjetas de la pagina
 const style = document.createElement('style');
 style.textContent = `
     .img-square {
