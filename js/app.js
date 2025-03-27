@@ -1,6 +1,7 @@
 const API_KEY = "60a0e5bab7msh8cae9556ead86adp1f39a0jsn34cf68f6923e";
 const API_HOST = "spotify23.p.rapidapi.com";
 
+// Variable global para almacenar los resultados de la búsqueda
 let searchResults = {
     songs: [],
     artists: []
@@ -19,24 +20,6 @@ function formatDuration(ms) {
     const minutes = Math.floor(ms / 60000);
     const seconds = ((ms % 60000) / 1000).toFixed(0);
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-}
-
-// Función para reproducir previsualización
-function playSong(previewUrl) {
-    const audioPlayer = document.getElementById("audioPlayer");
-    const playerContainer = document.getElementById("playerContainer");
-    
-    if (!previewUrl) {
-        alert("Esta canción no tiene vista previa disponible");
-        return;
-    }
-    
-    audioPlayer.src = previewUrl;
-    playerContainer.style.display = 'block';
-    audioPlayer.play().catch(error => {
-        console.error("Error al reproducir:", error);
-        alert("Haz clic primero en cualquier parte de la página para activar el audio");
-    });
 }
 
 // Función principal de búsqueda
@@ -107,8 +90,8 @@ async function showSongsResults() {
         const track = song.data;
         const coverArtUrl = getOptimizedImageUrl(track.albumOfTrack?.coverArt?.sources?.[0]?.url);
         const artistNames = track.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
-        const previewUrl = track.preview_url;
         const spotifyUrl = `https://open.spotify.com/track/${track.id}`;
+        const trackId = track.id;
 
         html += `
             <div class="col">
@@ -123,9 +106,7 @@ async function showSongsResults() {
                             <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
                                 <i class="fab fa-spotify"></i> Spotify
                             </a>
-                            <button onclick="playSong('${previewUrl}')" 
-                                    class="btn btn-sm btn-success flex-grow-1"
-                                    ${!previewUrl ? 'disabled title="No hay vista previa disponible"' : ''}>
+                            <button onclick="playSong('${trackId}')" class="btn btn-sm btn-success flex-grow-1">
                                 <i class="fas fa-play"></i> Escuchar
                             </button>
                         </div>
@@ -288,7 +269,6 @@ async function getArtistTopSongs(artistId, artistName) {
                 const track = item.releases.items[0];
                 const coverArtUrl = getOptimizedImageUrl(track.coverArt?.sources?.[0]?.url);
                 const trackId = track.id;
-                const previewUrl = track.tracks?.items[0]?.track?.preview_url;
                 const spotifyUrl = `https://open.spotify.com/track/${trackId}`;
 
                 html += `
@@ -303,9 +283,7 @@ async function getArtistTopSongs(artistId, artistName) {
                                     <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
                                         <i class="fab fa-spotify"></i> Spotify
                                     </a>
-                                    <button onclick="playSong('${previewUrl}')" 
-                                            class="btn btn-sm btn-success flex-grow-1"
-                                            ${!previewUrl ? 'disabled title="No hay vista previa disponible"' : ''}>
+                                    <button onclick="playSong('${trackId}')" class="btn btn-sm btn-success flex-grow-1">
                                         <i class="fas fa-play"></i> Escuchar
                                     </button>
                                 </div>
@@ -338,7 +316,9 @@ async function getAlbumTracks(albumId, artistName, artistId) {
     container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p>Cargando canciones...</p></div>';
 
     try {
+        // Primero obtenemos los metadatos del álbum para la portada
         const metadataUrl = `https://${API_HOST}/albums/?ids=${albumId}`;
+        // Luego las pistas del álbum
         const tracksUrl = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`;
         
         const options = {
@@ -349,6 +329,7 @@ async function getAlbumTracks(albumId, artistName, artistId) {
             }
         };
 
+        // Hacemos ambas peticiones en paralelo
         const [metadataResponse, tracksResponse] = await Promise.all([
             fetch(metadataUrl, options),
             fetch(tracksUrl, options)
@@ -359,6 +340,7 @@ async function getAlbumTracks(albumId, artistName, artistId) {
             tracksResponse.json()
         ]);
 
+        // Obtenemos la portada del álbum
         const albumCover = metadata.albums?.[0]?.images?.[0]?.url || 
                          tracksData.data?.album?.coverArt?.sources?.[0]?.url;
 
@@ -387,8 +369,8 @@ async function getAlbumTracks(albumId, artistName, artistId) {
             albumData.tracks.items.forEach((item, index) => {
                 const track = item.track;
                 const duration = formatDuration(track.duration?.totalMilliseconds);
-                const previewUrl = track.preview_url;
-                const spotifyUrl = `https://open.spotify.com/track/${track.uri?.split(':')[2] || ''}`;
+                const trackId = track.uri?.split(':')[2] || '';
+                const spotifyUrl = `https://open.spotify.com/track/${trackId}`;
                 
                 html += `
                     <div class="list-group-item list-group-item-action">
@@ -402,11 +384,11 @@ async function getAlbumTracks(albumId, artistName, artistId) {
                                 <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
                                     <i class="fab fa-spotify"></i>
                                 </a>
-                                <button onclick="playSong('${previewUrl}')" 
-                                        class="btn btn-sm btn-success"
-                                        ${!previewUrl ? 'disabled title="No hay vista previa disponible"' : ''}>
+                                ${trackId ? `
+                                <button onclick="playSong('${trackId}')" class="btn btn-sm btn-success">
                                     <i class="fas fa-play"></i>
                                 </button>
+                                ` : ''}
                             </div>
                         </div>
                     </div>`;
@@ -435,7 +417,12 @@ async function getAlbumTracks(albumId, artistName, artistId) {
     }
 }
 
-// Función para cuando no hay resultados
+// Función para simular la reproducción de la canción, aunque en si fue para obtener las id para las pruebas
+function playSong(trackId) {
+    alert(`Reproduciendo canción con ID: ${trackId}\n\nEn una implementación real, aquí se integraría con la API de Spotify`);
+}
+
+// Función para cuando un resultado no existe
 function showNoResults() {
     document.getElementById("resultsContainer").innerHTML = `
         <div class="alert alert-info">
@@ -444,7 +431,7 @@ function showNoResults() {
     `;
 }
 
-// Estilos
+// Estilos para las imagenes y tarjetas de la pagina
 const style = document.createElement('style');
 style.textContent = `
     .img-square {
@@ -477,17 +464,38 @@ style.textContent = `
         color: #b3b3b3;
         font-size: 0.85rem;
     }
+    .text-muted {
+        color: #b3b3b3 !important;
+    }
     #resultsContainer {
         min-height: 300px;
     }
     .list-group-item {
+        border-left: none;
+        border-right: none;
         background-color: #181818;
         color: white;
         border-color: #333;
     }
-    #playerContainer {
-        background: #000000cc;
-        backdrop-filter: blur(5px);
+    .list-group-item:hover {
+        background-color: #282828;
+    }
+    .alert {
+        background-color: #282828;
+        color: white;
+        border: none;
+    }
+    .alert-danger {
+        background-color: #3e1e1e;
+    }
+    .alert-info {
+        background-color: #1e3e3e;
+    }
+    .badge.bg-secondary {
+        background-color: #535353 !important;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: white;
     }
 `;
 document.head.appendChild(style);
