@@ -417,9 +417,31 @@ async function getAlbumTracks(albumId, artistName, artistId) {
     }
 }
 
-// Función para simular la reproducción de la canción, aunque en si fue para obtener las id para las pruebas
+/* Función para simular la reproducción de la canción, aunque en si fue para obtener las id para las pruebas
 function playSong(trackId) {
-    alert(`Reproduciendo canción con ID: ${trackId}\n\nEn una implementación real, aquí se integraría con la API de Spotify`);
+    // Buscamos en los resultados la canción que tenga el id indicado
+    const song = searchResults.songs.find(item => item.data.id === trackId);
+    // Si la canción tiene URL de previsualización, la usamos; sino, usamos una URL demo
+    const audioUrl = (song && song.data.preview_url) 
+                        ? song.data.preview_url 
+                        : "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
+
+    // Se intenta obtener un elemento <audio> existente; si no, se crea
+    let audioPlayer = document.getElementById("audioPlayer");
+    if (!audioPlayer) {
+        audioPlayer = document.createElement("audio");
+        audioPlayer.id = "audioPlayer";
+        audioPlayer.controls = true;
+        audioPlayer.style.display = "block";
+        audioPlayer.style.margin = "20px auto";
+        document.body.appendChild(audioPlayer);
+    }
+    
+    // Asignamos la URL obtenida y reproducimos el audio
+    audioPlayer.src = audioUrl;
+    audioPlayer.play().catch(error => {
+        console.error("Error al reproducir el audio:", error);
+    });
 }
 
 // Función para cuando un resultado no existe
