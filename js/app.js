@@ -21,6 +21,24 @@ function formatDuration(ms) {
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 }
 
+// Función para reproducir previsualización
+function playSong(previewUrl) {
+    const audioPlayer = document.getElementById("audioPlayer");
+    const playerContainer = document.getElementById("playerContainer");
+    
+    if (!previewUrl) {
+        alert("Esta canción no tiene vista previa disponible");
+        return;
+    }
+    
+    audioPlayer.src = previewUrl;
+    playerContainer.style.display = 'block';
+    audioPlayer.play().catch(error => {
+        console.error("Error al reproducir:", error);
+        alert("Haz clic primero en cualquier parte de la página para activar el audio");
+    });
+}
+
 // Función principal de búsqueda
 async function searchSpotify() {
     const query = document.getElementById("searchInput").value.trim();
@@ -40,17 +58,17 @@ async function searchSpotify() {
 
     try {
         document.getElementById("resultsContainer").innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div></div>';
-
+        
         const response = await fetch(url, options);
         const data = await response.json();
-
+        
         searchResults.songs = data.tracks?.items || [];
         searchResults.artists = data.artists?.items || [];
 
         if (searchResults.songs.length > 0) showResults("songs");
         else if (searchResults.artists.length > 0) showResults("artists");
         else showNoResults();
-
+        
     } catch (error) {
         console.error("Error en la búsqueda:", error);
         document.getElementById("resultsContainer").innerHTML = `
@@ -73,7 +91,7 @@ function showResults(type) {
     }
 }
 
-// Mostrar canciones (sin funcionalidad de reproducción)
+// Mostrar canciones
 async function showSongsResults() {
     const container = document.getElementById("resultsContainer");
     container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div></div>';
@@ -84,11 +102,12 @@ async function showSongsResults() {
     }
 
     let html = '<h3 class="mb-4">Canciones</h3><div class="row row-cols-1 row-cols-md-3 g-4">';
-
+    
     searchResults.songs.forEach(song => {
         const track = song.data;
         const coverArtUrl = getOptimizedImageUrl(track.albumOfTrack?.coverArt?.sources?.[0]?.url);
         const artistNames = track.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
+        const previewUrl = track.preview_url;
         const spotifyUrl = `https://open.spotify.com/track/${track.id}`;
 
         html += `
@@ -100,14 +119,21 @@ async function showSongsResults() {
                         <p class="card-text small">${artistNames}</p>
                     </div>
                     <div class="card-footer bg-transparent">
-                        <a href="${spotifyUrl}" target="_blank" class="btn btn-outline-primary w-100">
-                            <i class="fab fa-spotify"></i> Ver en Spotify
-                        </a>
+                        <div class="d-flex gap-2">
+                            <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                <i class="fab fa-spotify"></i> Spotify
+                            </a>
+                            <button onclick="playSong('${previewUrl}')" 
+                                    class="btn btn-sm btn-success flex-grow-1"
+                                    ${!previewUrl ? 'disabled title="No hay vista previa disponible"' : ''}>
+                                <i class="fas fa-play"></i> Escuchar
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>`;
     });
-
+    
     html += '</div>';
     container.innerHTML = html;
 }
@@ -115,14 +141,14 @@ async function showSongsResults() {
 // Mostrar artistas
 function showArtistsResults() {
     const container = document.getElementById("resultsContainer");
-
+    
     if (searchResults.artists.length === 0) {
         container.innerHTML = "<p>No se encontraron artistas</p>";
         return;
     }
 
     let html = '<h3 class="mb-4">Artistas</h3><div class="row row-cols-1 row-cols-md-3 g-4">';
-
+    
     searchResults.artists.forEach(artist => {
         const artistData = artist.data;
         const imgSrc = getOptimizedImageUrl(artistData.visuals?.avatarImage?.sources?.[0]?.url);
@@ -151,15 +177,15 @@ function showArtistsResults() {
                 </div>
             </div>`;
     });
-
+    
     html += '</div>';
     container.innerHTML = html;
 }
 
-// Función para obtener álbumes de un artista (sin reproducción)
+// Función para obtener álbumes de un artista
 async function getArtistAlbums(artistId, artistName) {
     const container = document.getElementById("resultsContainer");
-    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"><p>Cargando álbumes...</p></div></div>';
+    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p>Cargando álbumes...</p></div>';
 
     try {
         const url = `https://${API_HOST}/artist_albums/?id=${artistId}&offset=0&limit=50`;
@@ -186,7 +212,7 @@ async function getArtistAlbums(artistId, artistName) {
 
         if (data.data?.artist?.discography?.albums?.items) {
             const albums = data.data.artist.discography.albums.items;
-
+            
             albums.forEach(item => {
                 const album = item.releases.items[0];
                 const coverArtUrl = getOptimizedImageUrl(album.coverArt?.sources?.[0]?.url);
@@ -229,10 +255,10 @@ async function getArtistAlbums(artistId, artistName) {
     }
 }
 
-// Función para obtener canciones populares del artista (sin reproducción)
+// Función para obtener canciones populares del artista
 async function getArtistTopSongs(artistId, artistName) {
     const container = document.getElementById("resultsContainer");
-    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"><p>Cargando canciones populares...</p></div></div>';
+    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p>Cargando canciones populares...</p></div>';
 
     try {
         const url = `https://${API_HOST}/artist_singles/?id=${artistId}&offset=0&limit=10`;
@@ -262,6 +288,7 @@ async function getArtistTopSongs(artistId, artistName) {
                 const track = item.releases.items[0];
                 const coverArtUrl = getOptimizedImageUrl(track.coverArt?.sources?.[0]?.url);
                 const trackId = track.id;
+                const previewUrl = track.tracks?.items[0]?.track?.preview_url;
                 const spotifyUrl = `https://open.spotify.com/track/${trackId}`;
 
                 html += `
@@ -272,9 +299,16 @@ async function getArtistTopSongs(artistId, artistName) {
                                 <h5 class="card-title">${track.name || "Canción desconocida"}</h5>
                             </div>
                             <div class="card-footer bg-transparent">
-                                <a href="${spotifyUrl}" target="_blank" class="btn btn-outline-primary w-100">
-                                    <i class="fab fa-spotify"></i> Ver en Spotify
-                                </a>
+                                <div class="d-flex gap-2">
+                                    <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                        <i class="fab fa-spotify"></i> Spotify
+                                    </a>
+                                    <button onclick="playSong('${previewUrl}')" 
+                                            class="btn btn-sm btn-success flex-grow-1"
+                                            ${!previewUrl ? 'disabled title="No hay vista previa disponible"' : ''}>
+                                        <i class="fas fa-play"></i> Escuchar
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>`;
@@ -298,29 +332,36 @@ async function getArtistTopSongs(artistId, artistName) {
     }
 }
 
-// Función para obtener canciones de un álbum (sin reproducción)
+// Función para obtener canciones de un álbum
 async function getAlbumTracks(albumId, artistName, artistId) {
     const container = document.getElementById("resultsContainer");
-    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"><p>Cargando canciones...</p></div></div>';
+    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p>Cargando canciones...</p></div>';
 
     try {
+        const metadataUrl = `https://${API_HOST}/albums/?ids=${albumId}`;
+        const tracksUrl = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`;
+        
+        const options = {
+            method: "GET",
+            headers: {
+                "x-rapidapi-key": API_KEY,
+                "x-rapidapi-host": API_HOST
+            }
+        };
+
+        const [metadataResponse, tracksResponse] = await Promise.all([
+            fetch(metadataUrl, options),
+            fetch(tracksUrl, options)
+        ]);
+
         const [metadata, tracksData] = await Promise.all([
-            fetch(`https://${API_HOST}/albums/?ids=${albumId}`, {
-                headers: {
-                    "x-rapidapi-key": API_KEY,
-                    "x-rapidapi-host": API_HOST
-                }
-            }).then(res => res.json()),
-            fetch(`https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`, {
-                headers: {
-                    "x-rapidapi-key": API_KEY,
-                    "x-rapidapi-host": API_HOST
-                }
-            }).then(res => res.json())
+            metadataResponse.json(),
+            tracksResponse.json()
         ]);
 
         const albumCover = metadata.albums?.[0]?.images?.[0]?.url || 
                          tracksData.data?.album?.coverArt?.sources?.[0]?.url;
+
         const albumData = tracksData.data?.album;
         const coverArtUrl = getOptimizedImageUrl(albumCover, 300);
 
@@ -346,19 +387,27 @@ async function getAlbumTracks(albumId, artistName, artistId) {
             albumData.tracks.items.forEach((item, index) => {
                 const track = item.track;
                 const duration = formatDuration(track.duration?.totalMilliseconds);
+                const previewUrl = track.preview_url;
                 const spotifyUrl = `https://open.spotify.com/track/${track.uri?.split(':')[2] || ''}`;
-
+                
                 html += `
-                    <div class="list-group-item">
+                    <div class="list-group-item list-group-item-action">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <span class="badge bg-secondary me-2">${index + 1}</span>
                                 <strong>${track.name || "Pista desconocida"}</strong>
                                 <small class="text-muted ms-2">${duration}</small>
                             </div>
-                            <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                <i class="fab fa-spotify"></i> Ver
-                            </a>
+                            <div class="d-flex gap-2">
+                                <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fab fa-spotify"></i>
+                                </a>
+                                <button onclick="playSong('${previewUrl}')" 
+                                        class="btn btn-sm btn-success"
+                                        ${!previewUrl ? 'disabled title="No hay vista previa disponible"' : ''}>
+                                    <i class="fas fa-play"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>`;
             });
@@ -410,31 +459,35 @@ style.textContent = `
         border-radius: 8px;
         overflow: hidden;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        background-color: #f8f9fa;
+        background-color: #181818;
     }
     .card:hover {
         transform: translateY(-5px);
         box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        background-color: #282828;
     }
     .card-title {
         font-size: 0.95rem;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        color: white;
     }
     .card-text {
-        color: #6c757d;
+        color: #b3b3b3;
         font-size: 0.85rem;
     }
     #resultsContainer {
         min-height: 300px;
     }
     .list-group-item {
-        background-color: #f8f9fa;
-    }
-    .btn-spotify {
-        background-color: #1DB954;
+        background-color: #181818;
         color: white;
+        border-color: #333;
+    }
+    #playerContainer {
+        background: #000000cc;
+        backdrop-filter: blur(5px);
     }
 `;
 document.head.appendChild(style);
