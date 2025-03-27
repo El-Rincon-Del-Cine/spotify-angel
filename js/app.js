@@ -417,7 +417,8 @@ async function getAlbumTracks(albumId, artistName, artistId) {
     }
 }
 
-/* Función para simular la reproducción de la canción, aunque en si fue para obtener las id para las pruebas
+//Función para simular la reproducción de la canción, aunque en si fue para obtener las id para las pruebas
+
 function playSong(trackId) {
     // Buscamos en los resultados la canción que tenga el id indicado
     const song = searchResults.songs.find(item => item.data.id === trackId);
