@@ -85,14 +85,13 @@ async function showSongsResults() {
     }
 
     let html = '<h3 class="mb-4">Canciones</h3><div class="row row-cols-1 row-cols-md-3 g-4">';
-    
+
     searchResults.songs.forEach(song => {
         const track = song.data;
         const coverArtUrl = getOptimizedImageUrl(track.albumOfTrack?.coverArt?.sources?.[0]?.url);
         const artistNames = track.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
         const spotifyUrl = `https://open.spotify.com/track/${track.id}`;
-        const trackId = track.id;
-        const previewUrl = track.preview_url || ""; // Aquí obtenemos el preview_url
+        const previewUrl = track.preview_url;  // Aquí obtenemos el preview_url
 
         html += `
             <div class="col">
@@ -107,11 +106,9 @@ async function showSongsResults() {
                             <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
                                 <i class="fab fa-spotify"></i> Spotify
                             </a>
-                            ${previewUrl ? 
-                                `<button onclick="playPreview('${previewUrl}')" class="btn btn-sm btn-success flex-grow-1">
-                                    <i class="fas fa-play"></i> Escuchar
-                                </button>` 
-                            : '<button class="btn btn-sm btn-secondary flex-grow-1" disabled>No disponible</button>'}
+                            <button onclick="playSong('${previewUrl}')" class="btn btn-sm btn-success flex-grow-1" ${previewUrl ? '' : 'disabled'}>
+                                <i class="fas fa-play"></i> Escuchar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -121,13 +118,6 @@ async function showSongsResults() {
     html += '</div>';
     container.innerHTML = html;
 }
-
-function playPreview(url) {
-    const audio = document.getElementById("previewAudio");
-    audio.src = url;
-    audio.play();
-}
-
 
 // Mostrar artistas
 function showArtistsResults() {
@@ -428,9 +418,27 @@ async function getAlbumTracks(albumId, artistName, artistId) {
 }
 
 // Función para simular la reproducción de la canción, aunque en si fue para obtener las id para las pruebas
-function playSong(trackId) {
+/*function playSong(trackId) {
     alert(`Reproduciendo canción con ID: ${trackId}\n\nEn una implementación real, aquí se integraría con la API de Spotify`);
+}*/
+let currentAudio = null;
+
+function playSong(previewUrl) {
+    if (!previewUrl) {
+        alert("No hay vista previa disponible para esta canción.");
+        return;
+    }
+
+    // Detener cualquier otra reproducción en curso
+    if (currentAudio) {
+        currentAudio.pause();
+    }
+
+    // Crear y reproducir el audio
+    currentAudio = new Audio(previewUrl);
+    currentAudio.play();
 }
+
 
 // Función para cuando un resultado no existe
 function showNoResults() {
