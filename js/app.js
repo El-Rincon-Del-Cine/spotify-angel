@@ -92,6 +92,7 @@ async function showSongsResults() {
         const artistNames = track.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
         const spotifyUrl = `https://open.spotify.com/track/${track.id}`;
         const trackId = track.id;
+        const previewUrl = track.preview_url || ""; // Aquí obtenemos el preview_url
 
         html += `
             <div class="col">
@@ -106,18 +107,27 @@ async function showSongsResults() {
                             <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
                                 <i class="fab fa-spotify"></i> Spotify
                             </a>
-                            <button onclick="playSong('${trackId}')" class="btn btn-sm btn-success flex-grow-1">
-                                <i class="fas fa-play"></i> Escuchar
-                            </button>
+                            ${previewUrl ? 
+                                `<button onclick="playPreview('${previewUrl}')" class="btn btn-sm btn-success flex-grow-1">
+                                    <i class="fas fa-play"></i> Escuchar
+                                </button>` 
+                            : '<button class="btn btn-sm btn-secondary flex-grow-1" disabled>No disponible</button>'}
                         </div>
                     </div>
                 </div>
             </div>`;
     });
-    
+
     html += '</div>';
     container.innerHTML = html;
 }
+
+function playPreview(url) {
+    const audio = document.getElementById("previewAudio");
+    audio.src = url;
+    audio.play();
+}
+
 
 // Mostrar artistas
 function showArtistsResults() {
