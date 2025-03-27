@@ -480,6 +480,36 @@ function showNoResults() {
     `;
 }
 
+// Configuración de event listeners cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    // Buscar al hacer clic en el botón
+    document.getElementById('searchButton').addEventListener('click', searchSpotify);
+    
+    // Buscar al presionar Enter en el input
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchSpotify();
+        }
+    });
+    
+    // Manejar clicks en las pestañas
+    document.getElementById('songs-tab').addEventListener('click', function() {
+        showResults('songs');
+    });
+    
+    document.getElementById('artists-tab').addEventListener('click', function() {
+        showResults('artists');
+    });
+});
+
+// Asegúrate de que las funciones sean accesibles globalmente
+window.searchSpotify = searchSpotify;
+window.showResults = showResults;
+window.playPreview = playPreview;
+window.getArtistAlbums = getArtistAlbums;
+window.getArtistTopSongs = getArtistTopSongs;
+window.getAlbumTracks = getAlbumTracks;
+window.playSong = playSong;
 // Estilos para las imagenes y tarjetas de la pagina
 const style = document.createElement('style');
 style.textContent = `
