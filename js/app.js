@@ -94,25 +94,21 @@ async function showSongsResults() {
         const trackId = track.id;
 
         html += `
-            <div class="col">
-                <div class="card h-100">
-                    <img src="${coverArtUrl}" class="card-img-top img-square" alt="Portada">
-                    <div class="card-body">
-                        <h6 class="card-title">${track.name || "Canción desconocida"}</h6>
-                        <p class="card-text small">${artistNames}</p>
-                    </div>
-                    <div class="card-footer bg-transparent">
-                        <div class="d-flex gap-2">
-                            <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
-                                <i class="fab fa-spotify"></i> Spotify
-                            </a>
-                            <button onclick="playSong('${trackId}')" class="btn btn-sm btn-success flex-grow-1">
-                                <i class="fas fa-play"></i> Escuchar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
+    <div class="d-flex gap-2">
+        <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
+            <i class="fab fa-spotify"></i> Spotify
+        </a>
+        ${track.preview_url ? `
+        <button onclick="playSong('${track.preview_url}')" 
+                class="btn btn-sm btn-success flex-grow-1">
+            <i class="fas fa-play"></i> Escuchar
+        </button>
+        ` : `
+        <button class="btn btn-sm btn-secondary flex-grow-1" disabled>
+            <i class="fas fa-ban"></i> No disponible
+        </button>
+        `}
+    </div>`;
     });
     
     html += '</div>';
@@ -271,25 +267,22 @@ async function getArtistTopSongs(artistId, artistName) {
                 const trackId = track.id;
                 const spotifyUrl = `https://open.spotify.com/track/${trackId}`;
 
-                html += `
-                    <div class="col">
-                        <div class="card h-100">
-                            <img src="${coverArtUrl}" class="card-img-top" alt="Portada del single">
-                            <div class="card-body">
-                                <h5 class="card-title">${track.name || "Canción desconocida"}</h5>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <div class="d-flex gap-2">
-                                    <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
-                                        <i class="fab fa-spotify"></i> Spotify
-                                    </a>
-                                    <button onclick="playSong('${trackId}')" class="btn btn-sm btn-success flex-grow-1">
-                                        <i class="fas fa-play"></i> Escuchar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
+               html += `
+    <div class="d-flex gap-2">
+        <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
+            <i class="fab fa-spotify"></i> Spotify
+        </a>
+        ${track.preview_url ? `
+        <button onclick="playSong('${track.preview_url}')" 
+                class="btn btn-sm btn-success flex-grow-1">
+            <i class="fas fa-play"></i> Escuchar
+        </button>
+        ` : `
+        <button class="btn btn-sm btn-secondary flex-grow-1" disabled>
+            <i class="fas fa-ban"></i> No disponible
+        </button>
+        `}
+    </div>`;
             });
         } else {
             html += '<div class="col-12"><p class="text-muted">No se encontraron canciones populares.</p></div>';
@@ -372,26 +365,18 @@ async function getAlbumTracks(albumId, artistName, artistId) {
                 const trackId = track.uri?.split(':')[2] || '';
                 const spotifyUrl = `https://open.spotify.com/track/${trackId}`;
                 
-                html += `
-                    <div class="list-group-item list-group-item-action">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="badge bg-secondary me-2">${index + 1}</span>
-                                <strong>${track.name || "Pista desconocida"}</strong>
-                                <small class="text-muted ms-2">${duration}</small>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                    <i class="fab fa-spotify"></i>
-                                </a>
-                                ${trackId ? `
-                                <button onclick="playSong('${trackId}')" class="btn btn-sm btn-success">
-                                    <i class="fas fa-play"></i>
-                                </button>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </div>`;
+               html += `
+    ${track.preview_url ? `
+    <button onclick="playSong('${track.preview_url}')" 
+            class="btn btn-sm btn-success">
+        <i class="fas fa-play"></i>
+    </button>
+    ` : `
+    <button class="btn btn-sm btn-secondary" disabled
+            title="Vista previa no disponible">
+        <i class="fas fa-ban"></i>
+    </button>
+    `}`;
             });
         } else {
             html += '<div class="list-group-item text-muted">No se encontraron pistas en este álbum.</div>';
@@ -419,29 +404,35 @@ async function getAlbumTracks(albumId, artistName, artistId) {
 
 //Función para simular la reproducción de la canción, aunque en si fue para obtener las id para las pruebas
 
-function playSong(trackId) {
-    // Buscamos en los resultados la canción que tenga el id indicado
-    const song = searchResults.songs.find(item => item.data.id === trackId);
-    // Si la canción tiene URL de previsualización, la usamos; sino, usamos una URL demo
-    const audioUrl = (song && song.data.preview_url) 
-                        ? song.data.preview_url 
-                        : "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
-
-    // Se intenta obtener un elemento <audio> existente; si no, se crea
-    let audioPlayer = document.getElementById("audioPlayer");
-    if (!audioPlayer) {
-        audioPlayer = document.createElement("audio");
-        audioPlayer.id = "audioPlayer";
-        audioPlayer.controls = true;
-        audioPlayer.style.display = "block";
-        audioPlayer.style.margin = "20px auto";
-        document.body.appendChild(audioPlayer);
+function playSong(previewUrl) {
+    if (!previewUrl) {
+        alert("No hay vista previa disponible para esta canción.");
+        return;
     }
+
+    // Detener cualquier reproducción actual
+    const existingPlayer = document.getElementById("audioPlayer");
+    if (existingPlayer) {
+        existingPlayer.pause();
+        existingPlayer.parentNode.removeChild(existingPlayer);
+    }
+
+    // Crear nuevo reproductor
+    const audioPlayer = document.createElement("audio");
+    audioPlayer.id = "audioPlayer";
+    audioPlayer.controls = true;
+    audioPlayer.style.width = "100%";
+    audioPlayer.style.margin = "20px 0";
     
-    // Asignamos la URL obtenida y reproducimos el audio
-    audioPlayer.src = audioUrl;
+    // Insertar antes del resultsContainer
+    const container = document.getElementById("resultsContainer");
+    container.parentNode.insertBefore(audioPlayer, container);
+
+    // Configurar y reproducir
+    audioPlayer.src = previewUrl;
     audioPlayer.play().catch(error => {
-        console.error("Error al reproducir el audio:", error);
+        console.error("Error al reproducir:", error);
+        alert("No se pudo iniciar la reproducción. Intenta nuevamente.");
     });
 }
 
