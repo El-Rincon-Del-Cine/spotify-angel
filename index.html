@@ -72,7 +72,19 @@
             </div>
         </div>
     </div>
+<!-- Reproductor de audio fijo en la parte inferior -->
+<div class="fixed-bottom bg-dark p-2" style="display: none;" id="playerContainer">
+    <audio id="audioPlayer" controls class="w-100">
+        Tu navegador no soporta la reproducción de audio
+    </audio>
+</div>
 
+<script>
+    // Mostrar el reproductor cuando haya audio
+    document.getElementById('audioPlayer').addEventListener('play', () => {
+        document.getElementById('playerContainer').style.display = 'block';
+    });
+</script>
     <footer>
         <div class="container">
             <p>© 2025 Mini Spotify. Esta aplicación no está relacionada con Spotify, soy independiente.</p>
