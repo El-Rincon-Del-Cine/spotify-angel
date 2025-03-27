@@ -7,22 +7,6 @@ let searchResults = {
     artists: []
 };
 
-let audioPlayer = new Audio(); // Crea un objeto de audio global
-
-function playPreview(previewUrl) {
-    if (audioPlayer.src === previewUrl) {
-        if (audioPlayer.paused) {
-            audioPlayer.play();
-        } else {
-            audioPlayer.pause();
-        }
-    } else {
-        audioPlayer.src = previewUrl;
-        audioPlayer.play();
-    }
-}
-
-
 // Función para obtener URL de imagen optimizada
 function getOptimizedImageUrl(url, width = 150) {
     if (!url) return `https://via.placeholder.com/${width}`;
@@ -101,14 +85,13 @@ async function showSongsResults() {
     }
 
     let html = '<h3 class="mb-4">Canciones</h3><div class="row row-cols-1 row-cols-md-3 g-4">';
-
+    
     searchResults.songs.forEach(song => {
         const track = song.data;
         const coverArtUrl = getOptimizedImageUrl(track.albumOfTrack?.coverArt?.sources?.[0]?.url);
         const artistNames = track.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
         const spotifyUrl = `https://open.spotify.com/track/${track.id}`;
         const trackId = track.id;
-        const previewUrl = track.preview_url; // URL de la vista previa (30s)
 
         html += `
             <div class="col">
@@ -123,17 +106,15 @@ async function showSongsResults() {
                             <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
                                 <i class="fab fa-spotify"></i> Spotify
                             </a>
-                            ${previewUrl ? `
-                                <button onclick="playPreview('${previewUrl}')" class="btn btn-sm btn-success flex-grow-1">
-                                    <i class="fas fa-play"></i> Escuchar
-                                </button>
-                            ` : ''}
+                            <button onclick="playSong('${trackId}')" class="btn btn-sm btn-success flex-grow-1">
+                                <i class="fas fa-play"></i> Escuchar
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>`;
     });
-
+    
     html += '</div>';
     container.innerHTML = html;
 }
