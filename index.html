@@ -28,8 +28,9 @@
             <div class="input-group">
                 <input type="text" id="searchInput" class="form-control search-input" 
                        placeholder="Buscar artistas, canciones o álbumes..." 
-                       aria-label="Buscar en Spotify">
-                <button class="btn btn-spotify ms-2" type="button" id="searchButton">
+                       aria-label="Buscar en Spotify"
+                       onkeypress="if(event.key === 'Enter') searchSpotify()">
+                <button class="btn btn-spotify ms-2" type="button" onclick="searchSpotify()">
                     <i class="fas fa-search me-2"></i>Buscar
                 </button>
             </div>
@@ -39,13 +40,15 @@
         <ul class="nav nav-tabs" id="resultsTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="songs-tab" data-bs-toggle="tab" 
-                        data-bs-target="#songs" type="button" role="tab">
+                        data-bs-target="#songs" type="button" role="tab" 
+                        onclick="showResults('songs')">
                     <i class="fas fa-music me-2"></i>Canciones
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="artists-tab" data-bs-toggle="tab" 
-                        data-bs-target="#artists" type="button" role="tab">
+                        data-bs-target="#artists" type="button" role="tab" 
+                        onclick="showResults('artists')">
                     <i class="fas fa-user me-2"></i>Artistas
                 </button>
             </li>
@@ -69,6 +72,19 @@
             </div>
         </div>
     </div>
+    <!-- Reproductor de audio fijo en la parte inferior -->
+<div class="fixed-bottom bg-dark p-2" style="display: none;" id="playerContainer">
+    <audio id="audioPlayer" controls class="w-100">
+        Tu navegador no soporta la reproducción de audio
+    </audio>
+</div>
+
+<script>
+    // Mostrar el reproductor cuando haya audio
+    document.getElementById('audioPlayer').addEventListener('play', () => {
+        document.getElementById('playerContainer').style.display = 'block';
+    });
+</script>
     <footer>
         <div class="container">
             <p>© 2025 Mini Spotify. Esta aplicación no está relacionada con Spotify, soy independiente.</p>

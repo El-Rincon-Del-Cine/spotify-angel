@@ -7,37 +7,6 @@ let searchResults = {
     artists: []
 };
 
-// Función para manejar la reproducción del preview
-let currentAudio = null;
-
-function playPreview(previewUrl) {
-    // Detener la reproducción actual si hay una
-    if (currentAudio) {
-        currentAudio.pause();
-        currentAudio = null;
-    }
-    
-    if (!previewUrl) {
-        alert("No hay preview disponible para esta canción");
-        return;
-    }
-    
-    // Crear nuevo elemento de audio y reproducir
-    currentAudio = new Audio(previewUrl);
-    currentAudio.play().catch(e => {
-        console.error("Error al reproducir:", e);
-        alert("Error al reproducir el preview");
-    });
-}
-
-// Función para detener la reproducción
-function stopPreview() {
-    if (currentAudio) {
-        currentAudio.pause();
-        currentAudio = null;
-    }
-}
-
 // Función para obtener URL de imagen optimizada
 function getOptimizedImageUrl(url, width = 150) {
     if (!url) return `https://via.placeholder.com/${width}`;
@@ -106,7 +75,7 @@ function showResults(type) {
 }
 
 // Mostrar canciones
-sync function showSongsResults() {
+async function showSongsResults() {
     const container = document.getElementById("resultsContainer");
     container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div></div>';
 
@@ -123,10 +92,6 @@ sync function showSongsResults() {
         const artistNames = track.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
         const spotifyUrl = `https://open.spotify.com/track/${track.id}`;
         const trackId = track.id;
-        const previewUrl = track.preview_url; // Obtenemos el preview_url
-
-        // Verificamos si hay preview disponible
-        const hasPreview = previewUrl && previewUrl !== "null";
 
         html += `
             <div class="col">
@@ -141,15 +106,9 @@ sync function showSongsResults() {
                             <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
                                 <i class="fab fa-spotify"></i> Spotify
                             </a>
-                            ${hasPreview ? `
-                            <button onclick="playPreview('${previewUrl}')" class="btn btn-sm btn-warning flex-grow-1">
-                                <i class="fas fa-play-circle"></i> Preview
+                            <button onclick="playSong('${trackId}')" class="btn btn-sm btn-success flex-grow-1">
+                                <i class="fas fa-play"></i> Escuchar
                             </button>
-                            ` : `
-                            <button class="btn btn-sm btn-secondary flex-grow-1" disabled>
-                                <i class="fas fa-ban"></i> Sin Preview
-                            </button>
-                            `}
                         </div>
                     </div>
                 </div>
@@ -407,41 +366,33 @@ async function getAlbumTracks(albumId, artistName, artistId) {
         `;
 
         if (albumData?.tracks?.items) {
-        albumData.tracks.items.forEach((item, index) => {
-            const track = item.track;
-            const duration = formatDuration(track.duration?.totalMilliseconds);
-            const trackId = track.uri?.split(':')[2] || '';
-            const spotifyUrl = `https://open.spotify.com/track/${trackId}`;
-            const previewUrl = track.preview_url; // Obtenemos el preview_url
-            const hasPreview = previewUrl && previewUrl !== "null";
-            
-            html += `
-                <div class="list-group-item list-group-item-action">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="badge bg-secondary me-2">${index + 1}</span>
-                            <strong>${track.name || "Pista desconocida"}</strong>
-                            <small class="text-muted ms-2">${duration}</small>
+            albumData.tracks.items.forEach((item, index) => {
+                const track = item.track;
+                const duration = formatDuration(track.duration?.totalMilliseconds);
+                const trackId = track.uri?.split(':')[2] || '';
+                const spotifyUrl = `https://open.spotify.com/track/${trackId}`;
+                
+                html += `
+                    <div class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-secondary me-2">${index + 1}</span>
+                                <strong>${track.name || "Pista desconocida"}</strong>
+                                <small class="text-muted ms-2">${duration}</small>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fab fa-spotify"></i>
+                                </a>
+                                ${trackId ? `
+                                <button onclick="playSong('${trackId}')" class="btn btn-sm btn-success">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                ` : ''}
+                            </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                <i class="fab fa-spotify"></i>
-                            </a>
-                            ${hasPreview ? `
-                            <button onclick="playPreview('${previewUrl}')" class="btn btn-sm btn-warning">
-                                <i class="fas fa-play-circle"></i>
-                            </button>
-                            ` : ''}
-                            ${trackId ? `
-                            <button onclick="playSong('${trackId}')" class="btn btn-sm btn-success">
-                                <i class="fas fa-play"></i>
-                            </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>`;
-        });
-    }
+                    </div>`;
+            });
         } else {
             html += '<div class="list-group-item text-muted">No se encontraron pistas en este álbum.</div>';
         }
@@ -480,36 +431,6 @@ function showNoResults() {
     `;
 }
 
-// Configuración de event listeners cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', function() {
-    // Buscar al hacer clic en el botón
-    document.getElementById('searchButton').addEventListener('click', searchSpotify);
-    
-    // Buscar al presionar Enter en el input
-    document.getElementById('searchInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            searchSpotify();
-        }
-    });
-    
-    // Manejar clicks en las pestañas
-    document.getElementById('songs-tab').addEventListener('click', function() {
-        showResults('songs');
-    });
-    
-    document.getElementById('artists-tab').addEventListener('click', function() {
-        showResults('artists');
-    });
-});
-
-// Asegúrate de que las funciones sean accesibles globalmente
-window.searchSpotify = searchSpotify;
-window.showResults = showResults;
-window.playPreview = playPreview;
-window.getArtistAlbums = getArtistAlbums;
-window.getArtistTopSongs = getArtistTopSongs;
-window.getAlbumTracks = getAlbumTracks;
-window.playSong = playSong;
 // Estilos para las imagenes y tarjetas de la pagina
 const style = document.createElement('style');
 style.textContent = `
@@ -575,15 +496,6 @@ style.textContent = `
     }
     h1, h2, h3, h4, h5, h6 {
         color: white;
-    }
-    .btn-warning {
-        background-color: #ffdb4d;
-        border-color: #ffdb4d;
-        color: #000;
-    }
-    .btn-warning:hover {
-        background-color: #ffcc00;
-        border-color: #ffcc00;
     }
 `;
 document.head.appendChild(style);
