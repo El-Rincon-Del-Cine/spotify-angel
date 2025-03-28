@@ -63,35 +63,40 @@ function formatDuration(ms) {
 // Búsqueda principal
 async function searchSpotify() {
     const query = document.getElementById("searchInput").value.trim();
-    if (!query) {
+    if (query === "") {
         alert("Por favor, ingresa un término de búsqueda.");
         return;
     }
 
-    const encodedQuery = encodeURIComponent(query);
-    const url = `https://${API_HOST}/search/?q=${encodedQuery}&type=track,artist&offset=0&limit=10&numberOfTopResults=5`;
-    
+    const url = `https://${API_HOST}/search/?q=${encodeURIComponent(query)}&type=multi&offset=0&limit=10&numberOfTopResults=5`;
+    const options = {
+        method: "GET",
+        headers: {
+            "x-rapidapi-key": API_KEY,
+            "x-rapidapi-host": API_HOST
+        }
+    };
+
     try {
         document.getElementById("resultsContainer").innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div></div>';
         
         const response = await fetch(url, options);
         const data = await response.json();
         
-        // Manejo de resultados parciales
-        searchResults.songs = data.tracks?.items?.filter(item => item.data?.id) || [];
-        searchResults.artists = data.artists?.items?.filter(artist => artist.data?.id) || [];
+        searchResults.songs = data.tracks?.items || [];
+        searchResults.artists = data.artists?.items || [];
 
-        if (searchResults.songs.length > 0) {
-            showSongsResults();
-        } else if (searchResults.artists.length > 0) {
-            showArtistsResults();
-        } else {
-            showNoResults();
-        }
+        if (searchResults.songs.length > 0) showResults("songs");
+        else if (searchResults.artists.length > 0) showResults("artists");
+        else showNoResults();
         
     } catch (error) {
         console.error("Error en la búsqueda:", error);
-        showError("Error al realizar la búsqueda: " + error.message);
+        document.getElementById("resultsContainer").innerHTML = `
+            <div class="alert alert-danger">
+                Error al buscar: ${error.message}
+            </div>
+        `;
     }
 }
 
