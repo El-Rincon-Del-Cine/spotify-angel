@@ -62,14 +62,13 @@ function formatDuration(ms) {
 
 // Búsqueda principal
 async function searchSpotify() {
-    const query = document.getElementById("searchInput").value.trim().toLowerCase();
-    if (!query) {
+    const query = document.getElementById("searchInput").value.trim();
+    if (query === "") {
         alert("Por favor, ingresa un término de búsqueda.");
         return;
     }
 
-    const encodedQuery = encodeURIComponent(query + '*'); // Wildcard para búsquedas parciales
-    const url = `https://${API_HOST}/search/?q=${encodedQuery}&type=track,artist&offset=0&limit=10`;
+    const url = `https://${API_HOST}/search/?q=${encodeURIComponent(query)}&type=multi&offset=0&limit=10&numberOfTopResults=5`;
     const options = {
         method: "GET",
         headers: {
@@ -84,26 +83,18 @@ async function searchSpotify() {
         const response = await fetch(url, options);
         const data = await response.json();
         
-        // Filtrado client-side para coincidencias parciales
-        searchResults.songs = (data.tracks?.items || []).filter(item => 
-            item.data?.name?.toLowerCase().includes(query) && 
-            item.data?.preview_url
-        );
-        
-        searchResults.artists = (data.artists?.items || []).filter(artist => 
-            artist.data?.profile?.name?.toLowerCase().includes(query)
-        );
+        searchResults.songs = data.tracks?.items || [];
+        searchResults.artists = data.artists?.items || [];
 
-        if (searchResults.songs.length > 0) showSongsResults();
-        else if (searchResults.artists.length > 0) showArtistsResults();
+        if (searchResults.songs.length > 0) showResults("songs");
+        else if (searchResults.artists.length > 0) showResults("artists");
         else showNoResults();
         
     } catch (error) {
         console.error("Error en la búsqueda:", error);
         document.getElementById("resultsContainer").innerHTML = `
             <div class="alert alert-danger">
-                Error al buscar "${query}": ${error.message}
-                <button onclick="searchSpotify()" class="btn btn-link">Reintentar</button>
+                Error al buscar: ${error.message}
             </div>
         `;
     }
