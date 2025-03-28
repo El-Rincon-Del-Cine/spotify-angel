@@ -131,7 +131,7 @@ async function showSongsResults() {
         const coverArtUrl = getOptimizedImageUrl(track.albumOfTrack?.coverArt?.sources?.[0]?.url);
         const artistNames = track.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
         const spotifyUrl = `https://open.spotify.com/track/${track.id}`;
-        const previewUrl = track.preview_url;
+        const previewUrl = track.preview_url; // <-- Usamos el preview_url directo
 
         html += `
             <div class="col">
@@ -156,7 +156,6 @@ async function showSongsResults() {
                 </div>
             </div>`;
     });
-    
     container.innerHTML = html + '</div>';
 }
 
@@ -302,12 +301,12 @@ async function getArtistTopSongs(artistId, artistName) {
         `;
 
         if (data.data?.artist?.discography?.singles?.items) {
-            // Validación en cascada para cada elemento
+            // Procesar cada canción con validación
             for (const item of data.data.artist.discography.singles.items) {
                 const release = item.releases?.items?.[0];
-                if (!release?.id) continue; // Validación de datos
+                if (!release?.id) continue; // Validación clave
 
-                // Obtener detalles completos del track
+                // Obtener detalles del track
                 const trackResponse = await fetch(
                     `https://${API_HOST}/tracks/?ids=${release.id}`,
                     options
@@ -315,27 +314,26 @@ async function getArtistTopSongs(artistId, artistName) {
                 const trackData = await trackResponse.json();
                 const fullTrack = trackData.tracks?.[0];
                 
-                // Validar datos esenciales
-                if (!fullTrack?.preview_url) continue;
-
-                const coverArtUrl = getOptimizedImageUrl(fullTrack.album?.images?.[0]?.url);
-                const spotifyUrl = fullTrack.external_urls?.spotify || `https://open.spotify.com/track/${fullTrack.id}`;
+                const previewUrl = fullTrack?.preview_url;
+                const coverArtUrl = getOptimizedImageUrl(fullTrack?.album?.images?.[0]?.url);
+                const spotifyUrl = fullTrack?.external_urls?.spotify;
 
                 html += `
                     <div class="col">
                         <div class="card h-100">
                             <img src="${coverArtUrl}" class="card-img-top" alt="Portada">
                             <div class="card-body">
-                                <h5 class="card-title">${fullTrack.name || "Canción desconocida"}</h5>
+                                <h5 class="card-title">${fullTrack?.name || "Canción desconocida"}</h5>
                             </div>
                             <div class="card-footer bg-transparent">
                                 <div class="d-flex gap-2">
                                     <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
                                         <i class="fab fa-spotify"></i> Spotify
                                     </a>
-                                    <button onclick="playPreview('${fullTrack.preview_url}', this)" 
+                                    <button onclick="playPreview('${previewUrl}', this)" 
+                                            ${!previewUrl ? 'disabled' : ''} 
                                             class="btn btn-sm btn-success flex-grow-1">
-                                        <i class="fas fa-play"></i> Escuchar
+                                        ${previewUrl ? '<i class="fas fa-play"></i> Escuchar' : 'No disponible'}
                                     </button>
                                 </div>
                             </div>
@@ -344,17 +342,15 @@ async function getArtistTopSongs(artistId, artistName) {
             }
         }
 
-        html += data.data?.artist?.discography?.singles?.items?.length ? '</div>' : '<div class="col-12"><p class="text-muted">No se encontraron canciones populares.</p></div>';
+        html += '</div>';
         container.innerHTML = html;
-        
     } catch (error) {
         console.error("Error al obtener canciones populares:", error);
         container.innerHTML = `
             <div class="alert alert-danger">
                 Error al cargar las canciones populares: ${error.message}
-                <button onclick="getArtistTopSongs('${artistId}', '${artistName}')" 
-                        class="btn btn-link">
-                    Reintentar
+                <button onclick="showResults('artists')" class="btn btn-outline-secondary mt-2">
+                    <i class="fas fa-arrow-left"></i> Volver
                 </button>
             </div>
         `;
@@ -362,7 +358,7 @@ async function getArtistTopSongs(artistId, artistName) {
 }
 
 // Canciones de álbum
-async function getAlbumTracks(albumId, artistName, artistId) {
+/*async function getAlbumTracks(albumId, artistName, artistId) {
     const container = document.getElementById("resultsContainer");
     container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p>Cargando canciones...</p></div>';
 
@@ -439,6 +435,96 @@ async function getAlbumTracks(albumId, artistName, artistId) {
         container.innerHTML = html + '</div></div></div>';
     } catch (error) {
         console.error("Error al obtener canciones:", error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                Error: ${error.message}
+                <button onclick="getArtistAlbums('${artistId}', '${artistName}')" class="btn btn-outline-secondary mt-2">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+            </div>
+        `;
+    }
+}*/
+async function getAlbumTracks(albumId, artistName, artistId) {
+    const container = document.getElementById("resultsContainer");
+    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p>Cargando canciones...</p></div>';
+
+    try {
+        const tracksUrl = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`;
+        const options = {
+            method: "GET",
+            headers: {
+                "x-rapidapi-key": API_KEY,
+                "x-rapidapi-host": API_HOST
+            }
+        };
+
+        const tracksResponse = await fetch(tracksUrl, options);
+        const tracksData = await tracksResponse.json();
+
+        const trackIds = tracksData.data?.album?.tracks?.items
+            ?.map(item => item.track?.uri?.split(':')[2])
+            ?.filter(id => id)
+            ?.join(',');
+
+        // Obtener previews
+        const previewsResponse = await fetch(
+            `https://${API_HOST}/tracks/?ids=${trackIds}`,
+            options
+        );
+        const previewsData = await previewsResponse.json();
+        const tracksWithPreviews = previewsData.tracks || [];
+
+        let html = `
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>${tracksData.data?.album?.name || 'Álbum'} - ${artistName}</h3>
+                <button onclick="getArtistAlbums('${artistId}', '${artistName}')" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+            </div>
+            <div class="row">
+                <div class="col-md-3 text-center mb-4">
+                    <img src="${getOptimizedImageUrl(tracksData.data?.album?.coverArt?.sources?.[0]?.url, 300)}" 
+                         class="img-fluid rounded shadow" alt="Portada">
+                    <h5 class="mt-3">${tracksData.data?.album?.name || 'Álbum'}</h5>
+                    <p class="text-muted">${artistName}</p>
+                </div>
+                <div class="col-md-9">
+                    <div class="list-group">
+        `;
+
+        tracksData.data?.album?.tracks?.items?.forEach((item, index) => {
+            const track = item.track;
+            const preview = tracksWithPreviews.find(t => t.id === track.uri?.split(':')[2]);
+            const previewUrl = preview?.preview_url;
+            const duration = formatDuration(track.duration?.totalMilliseconds);
+            const spotifyUrl = `https://open.spotify.com/track/${track.uri?.split(':')[2]}`;
+
+            html += `
+                <div class="list-group-item list-group-item-action">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-secondary me-2">${index + 1}</span>
+                            <strong>${track.name || "Pista desconocida"}</strong>
+                            <small class="text-muted ms-2">${duration}</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fab fa-spotify"></i>
+                            </a>
+                            <button onclick="playPreview('${previewUrl}', this)" 
+                                    ${!previewUrl ? 'disabled' : ''} 
+                                    class="btn btn-sm btn-success">
+                                <i class="fas fa-play"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+        });
+
+        container.innerHTML = html + '</div></div></div>';
+    } catch (error) {
+        console.error("Error al obtener las pistas:", error);
         container.innerHTML = `
             <div class="alert alert-danger">
                 Error: ${error.message}
