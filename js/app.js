@@ -62,15 +62,13 @@ function formatDuration(ms) {
 
 // Búsqueda principal
 async function searchSpotify() {
-    const query = document.getElementById("searchInput").value.trim().toLowerCase();
+    const query = document.getElementById("searchInput").value.trim();
     if (query === "") {
         alert("Por favor, ingresa un término de búsqueda.");
         return;
     }
 
-    // Codificación mejorada para búsquedas parciales
-    const encodedQuery = encodeURIComponent(`${query}*`); // Agregamos wildcard
-    const url = `https://${API_HOST}/search/?q=${encodedQuery}&type=multi&offset=0&limit=10&numberOfTopResults=5`;
+    const url = `https://${API_HOST}/search/?q=${encodeURIComponent(query)}&type=multi&offset=0&limit=10&numberOfTopResults=5`;
     const options = {
         method: "GET",
         headers: {
@@ -85,16 +83,11 @@ async function searchSpotify() {
         const response = await fetch(url, options);
         const data = await response.json();
         
-        // Filtrado mejorado con coincidencias parciales
-        searchResults.songs = (data.tracks?.items || []).filter(item => {
-            const track = item.data;
-            return track?.name?.toLowerCase().includes(query) && track?.preview_url;
-        });
-        
-        searchResults.artists = (data.artists?.items || []).filter(artist => {
-            return artist.data?.profile?.name?.toLowerCase().includes(query);
-        });
+        // Filtrado básico del servidor sin modificaciones
+        searchResults.songs = data.tracks?.items || [];
+        searchResults.artists = data.artists?.items || [];
 
+        // Priorizar mostrar resultados aunque estén vacíos
         if (searchResults.songs.length > 0) showResults("songs");
         else if (searchResults.artists.length > 0) showResults("artists");
         else showNoResults();
@@ -104,7 +97,6 @@ async function searchSpotify() {
         document.getElementById("resultsContainer").innerHTML = `
             <div class="alert alert-danger">
                 Error al buscar: ${error.message}
-                <button onclick="searchSpotify()" class="btn btn-link">Reintentar</button>
             </div>
         `;
     }
