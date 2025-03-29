@@ -297,7 +297,6 @@ async function getArtistAlbums(artistId, artistName) {
     }
 }
 
-// Canciones populares de artista
 // Función para obtener canciones populares del artista
 async function getArtistTopSongs(artistId, artistName) {
     const container = document.getElementById("resultsContainer");
@@ -345,7 +344,7 @@ async function getArtistTopSongs(artistId, artistName) {
                                     <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
                                         <i class="fab fa-spotify"></i> Spotify
                                     </a>
-                                    <button onclick="playSong('${trackId}')" class="btn btn-sm btn-success flex-grow-1">
+                                    <button onclick="playPreview('${trackId}')" class="btn btn-sm btn-success flex-grow-1">
                                         <i class="fas fa-play"></i> Escuchar
                                     </button>
                                 </div>
