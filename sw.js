@@ -5,8 +5,10 @@ var cacheFiles = [
     './css/styles.css',
     './manifest.json',
     './js/app.js',
-    './icons/192.png',
-    './icons/512.png'
+    './img/192.png',
+    './img/512.png',
+    './img/spidey3.jpg',
+    './img/icono1.png'
 ];
 
 //metodo de instalacion del sw e inicia la cache y muestra los archivos que no se pudieron instalar
@@ -80,9 +82,9 @@ self.addEventListener('fetch', function(e) {
 
 self.addEventListener('message', event => {
     if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
-        self.registration.showNotification("Pixabay, tu buscador de imagenes", {
-            body: "Entra y busca las imagenes de tu agrado",
-            icon: "./icons/icono1.png"
+        self.registration.showNotification("Mini spotify, tu app para música", {
+            body: "Encuentra tus canciones favoritas con nosotros",
+            icon: "./img/icono1.png"
         });
     }
 });
