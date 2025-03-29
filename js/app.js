@@ -10,398 +10,514 @@ let searchResults = {
 let currentAudio = null;
 let currentPlayingButton = null;
 
-// ==================== FUNCIONES DE REPRODUCCIÓN ====================
+// Función para reproducir previews
 function playPreview(previewUrl, button) {
     if (!previewUrl) {
-        alert("Preview no disponible para esta canción");
+        alert("Esta canción no tiene vista previa disponible.");
         return;
     }
 
-    // Detener reproducción actual
     if (currentAudio && !currentAudio.paused) {
         currentAudio.pause();
-        currentPlayingButton.innerHTML = '<i class="fas fa-play"></i>';
+        currentPlayingButton.innerHTML = '<i class="fas fa-play"></i> Escuchar';
     }
 
-    // Iniciar nueva reproducción
     if (!currentAudio || currentAudio.src !== previewUrl) {
         currentAudio = new Audio(previewUrl);
         currentPlayingButton = button;
         
         currentAudio.play()
             .then(() => {
-                button.innerHTML = '<i class="fas fa-pause"></i>';
-                button.classList.add('playing');
+                button.innerHTML = '<i class="fas fa-pause"></i> Pausar';
             })
             .catch(error => {
-                console.error("Error de reproducción:", error);
-                button.innerHTML = '<i class="fas fa-play"></i>';
+                console.error("Error al reproducir:", error);
+                alert("No se pudo iniciar la vista previa.");
             });
 
-        // Restablecer al finalizar
         currentAudio.onended = () => {
-            button.innerHTML = '<i class="fas fa-play"></i>';
-            button.classList.remove('playing');
+            button.innerHTML = '<i class="fas fa-play"></i> Escuchar';
             currentAudio = null;
             currentPlayingButton = null;
         };
+    } else {
+        currentAudio = null;
+        currentPlayingButton = null;
     }
 }
 
-// ==================== FUNCIONES AUXILIARES ====================
-function getOptimizedImageUrl(url, width = 300) {
-    return url?.replace(/w\d+-h\d+/, `w${width}-h${width}`) || `https://via.placeholder.com/${width}`;
+// Funciones auxiliares
+function getOptimizedImageUrl(url, width = 150) {
+    if (!url) return `https://via.placeholder.com/${width}`;
+    if (url.includes('via.placeholder.com')) return url.replace(/\d+$/, width);
+    return url;
 }
 
 function formatDuration(ms) {
+    if (!ms) return "0:00";
     const minutes = Math.floor(ms / 60000);
     const seconds = ((ms % 60000) / 1000).toFixed(0);
-    return `${minutes}:${seconds.padStart(2, '0')}`;
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 }
 
-// ==================== BÚSQUEDA PRINCIPAL ====================
+// Búsqueda principal
 async function searchSpotify() {
     const query = document.getElementById("searchInput").value.trim();
     if (!query) {
-        showNoResults("❌ Ingresa un término de búsqueda");
+        alert("Por favor, ingresa un término de búsqueda.");
         return;
     }
 
+    const url = `https://${API_HOST}/search/?q=${encodeURIComponent(query)}&type=multi&offset=0&limit=10&numberOfTopResults=5`;
+    const options = {
+        method: "GET",
+        headers: {
+            "x-rapidapi-key": API_KEY,
+            "x-rapidapi-host": API_HOST
+        }
+    };
+
     try {
-        document.getElementById("resultsContainer").innerHTML = `
-            <div class="loading-spinner">
-                <div class="spinner"></div>
-                <p>Buscando "${query}"...</p>
-            </div>`;
-
-        const response = await fetch(
-            `https://${API_HOST}/search/?q=${encodeURIComponent(query)}&type=track,artist&limit=15&numberOfTopResults=5`,
-            {
-                method: "GET",
-                headers: {
-                    "x-rapidapi-key": API_KEY,
-                    "x-rapidapi-host": API_HOST
-                }
-            }
-        );
-
+        document.getElementById("resultsContainer").innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div></div>';
+        
+        const response = await fetch(url, options);
         const data = await response.json();
         
-        // Procesar resultados
-        searchResults.songs = data.tracks?.items?.filter(track => 
-            track.data?.preview_url && track.data?.name
-        ) || [];
+        searchResults.songs = data.tracks?.items || [];
+        searchResults.artists = data.artists?.items || [];
+
+        if (searchResults.songs.length > 0) showResults("songs");
+        else if (searchResults.artists.length > 0) showResults("artists");
+        else showNoResults();
         
-        searchResults.artists = data.artists?.items?.filter(artist => 
-            artist.data?.profile?.name && artist.data?.visuals?.avatarImage
-        ) || [];
-
-        // Mostrar resultados
-        if (searchResults.songs.length > 0) showSongsResults();
-        else if (searchResults.artists.length > 0) showArtistsResults();
-        else showNoResults("🔍 No se encontraron resultados");
-
     } catch (error) {
-        console.error("Error en búsqueda:", error);
-        showNoResults("🚨 Error al conectar con Spotify");
+        console.error("Error en la búsqueda:", error);
+        document.getElementById("resultsContainer").innerHTML = `
+            <div class="alert alert-danger">
+                Error al buscar: ${error.message}
+            </div>
+        `;
     }
 }
 
-// ==================== VISTA DE RESULTADOS ====================
-function showSongsResults() {
+// Mostrar resultados
+function showResults(type) {
     const container = document.getElementById("resultsContainer");
-    container.innerHTML = '<h2 class="section-title">🎵 Canciones</h2><div class="tracks-grid">';
+    container.innerHTML = "";
 
-    searchResults.songs.forEach((song, index) => {
-        const track = song.data;
-        const artists = track.artists?.items?.map(a => a.profile.name).join(", ") || "Artista desconocido";
+    if (type === "songs") {
+        showSongsResults();
+    } else if (type === "artists") {
+        showArtistsResults();
+    }
+}
+
+// Canciones
+async function showSongsResults() {
+    const container = document.getElementById("resultsContainer");
+    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div></div>';
+
+    if (searchResults.songs.length === 0) {
+        container.innerHTML = "<p>No se encontraron canciones</p>";
+        return;
+    }
+
+    // Obtener IDs de los tracks para buscar los preview_url
+    const trackIds = searchResults.songs.map(song => song.data.id).join(',');
+    const url = `https://${API_HOST}/tracks/?ids=${trackIds}`;
+    const options = {
+        method: "GET",
+        headers: {
+            "x-rapidapi-key": API_KEY,
+            "x-rapidapi-host": API_HOST
+        }
+    };
+
+    try {
+        const response = await fetch(url, options);
+        const tracksData = await response.json();
+
+        // Mapear preview_url a cada canción
+        const tracksWithPreviews = tracksData.tracks.reduce((acc, track) => {
+            acc[track.id] = track.preview_url;
+            return acc;
+        }, {});
+
+        // Generar HTML con los previews
+        let html = '<h3 class="mb-4">Canciones</h3><div class="row row-cols-1 row-cols-md-3 g-4">';
         
-        container.innerHTML += `
-            <div class="track-card">
-                <img src="${getOptimizedImageUrl(track.albumOfTrack?.coverArt?.sources?.[0]?.url)}" 
-                     class="track-cover" 
-                     alt="${track.name}">
-                <div class="track-info">
-                    <h3 class="track-title">${track.name}</h3>
-                    <p class="track-artist">${artists}</p>
-                    <div class="track-controls">
-                        <button class="play-button" 
-                                onclick="playPreview('${track.preview_url}', this)"
-                                ${!track.preview_url ? 'disabled' : ''}>
-                            <i class="fas fa-${track.preview_url ? 'play' : 'ban'}"></i>
-                        </button>
-                        <a href="https://open.spotify.com/track/${track.id}" 
-                           target="_blank" 
-                           class="spotify-link">
-                            <i class="fab fa-spotify"></i>
-                        </a>
+        searchResults.songs.forEach(song => {
+            const track = song.data;
+            const previewUrl = tracksWithPreviews[track.id]; // Usar el preview_url real
+            const coverArtUrl = getOptimizedImageUrl(track.albumOfTrack?.coverArt?.sources?.[0]?.url);
+            const artistNames = track.artists?.items?.map(artist => artist.profile?.name).join(", ") || "Artista desconocido";
+            const spotifyUrl = `https://open.spotify.com/track/${track.id}`;
+
+            html += `
+                <div class="col">
+                    <div class="card h-100">
+                        <img src="${coverArtUrl}" class="card-img-top img-square" alt="Portada">
+                        <div class="card-body">
+                            <h6 class="card-title">${track.name || "Canción desconocida"}</h6>
+                            <p class="card-text small">${artistNames}</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex gap-2">
+                                <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
+                                    <i class="fab fa-spotify"></i> Spotify
+                                </a>
+                                <button onclick="playPreview('${previewUrl}', this)" 
+                                        ${!previewUrl ? 'disabled' : ''} 
+                                        class="btn btn-sm btn-success flex-grow-1">
+                                    ${previewUrl ? '<i class="fas fa-play"></i> Escuchar' : 'Preview no disponible'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        });
+        
+        container.innerHTML = html + '</div>';
+    } catch (error) {
+        console.error("Error al obtener previews:", error);
+        container.innerHTML = "<p>Error al cargar las canciones</p>";
+    }
+}
+
+// Artistas
+function showArtistsResults() {
+    const container = document.getElementById("resultsContainer");
+    
+    if (searchResults.artists.length === 0) {
+        container.innerHTML = "<p>No se encontraron artistas</p>";
+        return;
+    }
+
+    let html = '<h3 class="mb-4">Artistas</h3><div class="row row-cols-1 row-cols-md-3 g-4">';
+    
+    searchResults.artists.forEach(artist => {
+        const artistData = artist.data;
+        const imgSrc = getOptimizedImageUrl(artistData.visuals?.avatarImage?.sources?.[0]?.url);
+        const artistName = artistData.profile?.name || "Artista desconocido";
+        const artistId = artistData.uri.split(':')[2];
+
+        html += `
+            <div class="col">
+                <div class="card h-100">
+                    <img src="${imgSrc}" class="card-img-top img-square" alt="Imagen del artista">
+                    <div class="card-body text-center">
+                        <h6 class="card-title">${artistName}</h6>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex flex-column gap-2">
+                            <button onclick="getArtistAlbums('${artistId}', '${artistName}')" 
+                                    class="btn btn-info w-100">
+                                <i class="fas fa-compact-disc me-1"></i> Álbumes
+                            </button>
+                            <button onclick="getArtistTopSongs('${artistId}', '${artistName}')" 
+                                    class="btn btn-primary w-100">
+                                <i class="fas fa-music me-1"></i> Canciones Populares
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>`;
     });
-
-    container.innerHTML += '</div>';
+    
+    container.innerHTML = html + '</div>';
 }
 
-function showArtistsResults() {
+// Álbumes de artista
+async function getArtistAlbums(artistId, artistName) {
     const container = document.getElementById("resultsContainer");
-    container.innerHTML = '<h2 class="section-title">🎤 Artistas</h2><div class="artists-grid">';
+    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p>Cargando álbumes...</p></div>';
 
-    searchResults.artists.forEach(artist => {
-        const artistData = artist.data;
-        const imageUrl = getOptimizedImageUrl(artistData.visuals?.avatarImage?.sources?.[0]?.url);
+    try {
+        const url = `https://${API_HOST}/artist_albums/?id=${artistId}&offset=0&limit=50`;
+        const options = {
+            method: "GET",
+            headers: {
+                "x-rapidapi-key": API_KEY,
+                "x-rapidapi-host": API_HOST
+            }
+        };
 
-        container.innerHTML += `
-            <div class="artist-card">
-                <img src="${imageUrl}" 
-                     class="artist-image" 
-                     alt="${artistData.profile.name}">
-                <h3 class="artist-name">${artistData.profile.name}</h3>
-                <div class="artist-actions">
-                    <button class="btn-albums" 
-                            onclick="getArtistAlbums('${artistData.uri.split(':')[2]}', '${artistData.profile.name}')">
-                        <i class="fas fa-compact-disc"></i> Álbumes
-                    </button>
-                    <button class="btn-tracks"
-                            onclick="getArtistTopTracks('${artistData.uri.split(':')[2]}', '${artistData.profile.name}')">
-                        <i class="fas fa-music"></i> Top Canciones
-                    </button>
-                </div>
-            </div>`;
-    });
+        const response = await fetch(url, options);
+        const data = await response.json();
 
-    container.innerHTML += '</div>';
+        let html = `
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>Álbumes de ${artistName}</h3>
+                <button onclick="showResults('artists')" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+            </div>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+        `;
+
+        if (data.data?.artist?.discography?.albums?.items) {
+            const albums = data.data.artist.discography.albums.items;
+            
+            albums.forEach(item => {
+                const album = item.releases.items[0];
+                const coverArtUrl = getOptimizedImageUrl(album.coverArt?.sources?.[0]?.url);
+                const albumId = album.id;
+                const releaseYear = album.date?.year || "Año desconocido";
+
+                html += `
+                    <div class="col">
+                        <div class="card h-100">
+                            <img src="${coverArtUrl}" class="card-img-top" alt="Portada del álbum">
+                            <div class="card-body">
+                                <h5 class="card-title">${album.name || "Álbum desconocido"}</h5>
+                                <p class="card-text text-muted">${releaseYear}</p>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <button onclick="getAlbumTracks('${albumId}', '${artistName}', '${artistId}')" 
+                                        class="btn btn-primary w-100">
+                                    <i class="fas fa-music"></i> Ver Canciones
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        container.innerHTML = html + '</div>';
+    } catch (error) {
+        console.error("Error al obtener álbumes:", error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                Error: ${error.message}
+                <button onclick="showResults('artists')" class="btn btn-outline-secondary mt-2">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+            </div>
+        `;
+    }
 }
 
-// ==================== VISTAS DE ARTISTA ====================
-async function getArtistTopTracks(artistId, artistName) {
+// Canciones populares de artista
+async function getArtistTopSongs(artistId, artistName) {
+    const container = document.getElementById("resultsContainer");
+    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p>Cargando canciones...</p></div>';
+
     try {
-        document.getElementById("resultsContainer").innerHTML = `
-            <div class="loading-spinner">
-                <div class="spinner"></div>
-                <p>Cargando canciones de ${artistName}...</p>
-            </div>`;
-
-        const response = await fetch(
-            `https://${API_HOST}/artist_top_tracks/?id=${artistId}`,
-            {
-                method: "GET",
-                headers: {
-                    "x-rapidapi-key": API_KEY,
-                    "x-rapidapi-host": API_HOST
-                }
+        const singlesUrl = `https://${API_HOST}/artist_singles/?id=${artistId}&offset=0&limit=10`;
+        const options = {
+            method: "GET",
+            headers: {
+                "x-rapidapi-key": API_KEY,
+                "x-rapidapi-host": API_HOST
             }
-        );
+        };
 
+        // Obtener singles
+        const response = await fetch(singlesUrl, options);
         const data = await response.json();
-        const container = document.getElementById("resultsContainer");
-        container.innerHTML = `
-            <h2 class="section-title"> Top Canciones - ${artistName}</h2>
-            <button class="back-button" onclick="showArtistsResults()">
-                <i class="fas fa-arrow-left"></i> Volver
-            </button>
-            <div class="tracks-grid">`;
+        const singles = data.data?.artist?.discography?.singles?.items || [];
 
-        data.tracks?.forEach(track => {
-            container.innerHTML += `
-                <div class="track-card">
-                    <img src="${getOptimizedImageUrl(track.album?.images?.[0]?.url)}" 
-                         class="track-cover" 
-                         alt="${track.name}">
-                    <div class="track-info">
-                        <h3 class="track-title">${track.name}</h3>
-                        <p class="track-duration">${formatDuration(track.duration_ms)}</p>
-                        <div class="track-controls">
-                            <button class="play-button" 
-                                    onclick="playPreview('${track.preview_url}', this)"
-                                    ${!track.preview_url ? 'disabled' : ''}>
-                                <i class="fas fa-${track.preview_url ? 'play' : 'ban'}"></i>
-                            </button>
-                            <a href="${track.external_urls.spotify}" 
-                               target="_blank" 
-                               class="spotify-link">
-                                <i class="fab fa-spotify"></i>
-                            </a>
+        // Extraer IDs de tracks
+        const trackIds = singles
+            .map(item => item.releases.items[0]?.id)
+            .filter(id => id)
+            .join(',');
+
+        // Obtener detalles de los tracks (incluyendo preview_url)
+        const tracksUrl = `https://${API_HOST}/tracks/?ids=${trackIds}`;
+        const tracksResponse = await fetch(tracksUrl, options);
+        const tracksData = await tracksResponse.json();
+        const tracksWithPreviews = tracksData.tracks || [];
+
+        // Generar HTML
+        let html = `
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>Canciones de ${artistName}</h3>
+                <button onclick="showResults('artists')" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+            </div>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+        `;
+
+        singles.forEach((item, index) => {
+            const track = item.releases.items[0];
+            const preview = tracksWithPreviews.find(t => t.id === track.id);
+            const previewUrl = preview?.preview_url;
+            const coverArtUrl = getOptimizedImageUrl(track.coverArt?.sources?.[0]?.url);
+
+            html += `
+                <div class="col">
+                    <div class="card h-100">
+                        <img src="${coverArtUrl}" class="card-img-top" alt="Portada">
+                        <div class="card-body">
+                            <h5 class="card-title">${track.name || "Canción desconocida"}</h5>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex gap-2">
+                                <button onclick="playPreview('${previewUrl}', this)" 
+                                        ${!previewUrl ? 'disabled' : ''} 
+                                        class="btn btn-sm btn-success flex-grow-1">
+                                    ${previewUrl ? '<i class="fas fa-play"></i> Escuchar' : 'No disponible'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>`;
         });
 
-        container.innerHTML += '</div>';
+        container.innerHTML = html + '</div>';
     } catch (error) {
-        console.error("Error al cargar top canciones:", error);
-        showNoResults("Error al cargar las canciones populares");
+        console.error("Error al obtener canciones:", error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                Error: ${error.message}
+                <button onclick="showResults('artists')" class="btn btn-outline-secondary mt-2">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+            </div>
+        `;
     }
 }
 
-async function getArtistAlbums(artistId, artistName) {
+// Canciones de álbum
+async function getAlbumTracks(albumId, artistName, artistId) {
+    const container = document.getElementById("resultsContainer");
+    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p>Cargando canciones...</p></div>';
+
     try {
-        document.getElementById("resultsContainer").innerHTML = `
-            <div class="loading-spinner">
-                <div class="spinner"></div>
-                <p>Cargando álbumes de ${artistName}...</p>
-            </div>`;
-
-        const response = await fetch(
-            `https://${API_HOST}/artist_albums/?id=${artistId}&limit=10`,
-            {
-                method: "GET",
-                headers: {
-                    "x-rapidapi-key": API_KEY,
-                    "x-rapidapi-host": API_HOST
-                }
+        const tracksUrl = `https://${API_HOST}/album_tracks/?id=${albumId}&offset=0&limit=50`;
+        const options = {
+            method: "GET",
+            headers: {
+                "x-rapidapi-key": API_KEY,
+                "x-rapidapi-host": API_HOST
             }
-        );
+        };
 
-        const data = await response.json();
-        const container = document.getElementById("resultsContainer");
-        container.innerHTML = `
-            <h2 class="section-title"> Álbumes - ${artistName}</h2>
-            <button class="back-button" onclick="showArtistsResults()">
-                <i class="fas fa-arrow-left"></i> Volver
-            </button>
-            <div class="albums-grid">`;
+        const tracksResponse = await fetch(tracksUrl, options);
+        const tracksData = await tracksResponse.json();
 
-        data.data?.artist?.discography?.albums?.items?.forEach(album => {
-            const albumData = album.releases.items[0];
-            container.innerHTML += `
-                <div class="album-card">
-                    <img src="${getOptimizedImageUrl(albumData.coverArt?.sources?.[0]?.url)}" 
-                         class="album-cover" 
-                         alt="${albumData.name}">
-                    <h3 class="album-title">${albumData.name}</h3>
-                    <p class="album-year">${albumData.date?.year || 'Año desconocido'}</p>
-                    <button class="btn-tracks" 
-                            onclick="getAlbumTracks('${albumData.id}', '${artistName}', '${artistId}')">
-                        <i class="fas fa-list"></i> Ver canciones
-                    </button>
+        const trackIds = tracksData.data?.album?.tracks?.items
+            .map(item => item.track.uri.split(':')[2])
+            .filter(id => id)
+            .join(',');
+
+        const previewsUrl = `https://${API_HOST}/tracks/?ids=${trackIds}`;
+        const previewsResponse = await fetch(previewsUrl, options);
+        const previewsData = await previewsResponse.json();
+
+        const tracksWithPreviews = previewsData.tracks?.map(track => ({
+            id: track.id,
+            preview_url: track.preview_url
+        })) || [];
+
+        let html = `
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>${tracksData.data?.album?.name || 'Álbum'} - ${artistName}</h3>
+                <button onclick="getArtistAlbums('${artistId}', '${artistName}')" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+            </div>
+            <div class="row">
+                <div class="col-md-3 text-center mb-4">
+                    <img src="${getOptimizedImageUrl(tracksData.data?.album?.coverArt?.sources?.[0]?.url, 300)}" 
+                         class="img-fluid rounded shadow" alt="Portada">
+                    <h5 class="mt-3">${tracksData.data?.album?.name || 'Álbum'}</h5>
+                    <p class="text-muted">${artistName}</p>
+                </div>
+                <div class="col-md-9">
+                    <div class="list-group">
+        `;
+
+        tracksData.data?.album?.tracks?.items?.forEach((item, index) => {
+            const track = item.track;
+            const duration = formatDuration(track.duration?.totalMilliseconds);
+            const preview = tracksWithPreviews.find(t => t.id === track.uri.split(':')[2]);
+            const previewUrl = preview?.preview_url;
+
+            html += `
+                <div class="list-group-item list-group-item-action">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-secondary me-2">${index + 1}</span>
+                            <strong>${track.name || "Pista desconocida"}</strong>
+                            <small class="text-muted ms-2">${duration}</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button onclick="playPreview('${previewUrl}', this)" 
+                                    ${!previewUrl ? 'disabled' : ''} 
+                                    class="btn btn-sm btn-success">
+                                ${previewUrl ? '<i class="fas fa-play"></i>' : 'No disponible'}
+                            </button>
+                        </div>
+                    </div>
                 </div>`;
         });
 
-        container.innerHTML += '</div>';
+        container.innerHTML = html + '</div></div></div>';
     } catch (error) {
-        console.error("Error al cargar álbumes:", error);
-        showNoResults(" Error al cargar los álbumes");
+        console.error("Error al obtener canciones:", error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                Error: ${error.message}
+                <button onclick="getArtistAlbums('${artistId}', '${artistName}')" class="btn btn-outline-secondary mt-2">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+            </div>
+        `;
     }
 }
 
-// ==================== FUNCIONES ADICIONALES ====================
-function showNoResults(message = "🔍 No se encontraron resultados") {
-    document.getElementById("resultsContainer").innerHTML = `
-        <div class="no-results">
-            <i class="fas fa-search-minus"></i>
-            <p>${message}</p>
-        </div>`;
-}
-
-// ==================== ESTILOS ====================
+// Estilos
 const style = document.createElement('style');
 style.textContent = `
-    :root {
-        --primary-color: #1DB954;
-        --background-color: #121212;
-        --card-color: #181818;
-        --text-color: #FFFFFF;
-    }
-
-    body {
-        background: var(--background-color);
-        color: var(--text-color);
-        font-family: 'Arial', sans-serif;
-        padding: 20px;
-    }
-
-    .loading-spinner {
-        text-align: center;
-        padding: 50px;
-    }
-
-    .spinner {
-        border: 4px solid rgba(255,255,255,0.3);
-        border-radius: 50%;
-        border-top-color: var(--primary-color);
-        width: 40px;
-        height: 40px;
-        margin: 20px auto;
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    .tracks-grid, .artists-grid, .albums-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 20px;
-        margin-top: 20px;
-    }
-
-    .track-card, .artist-card, .album-card {
-        background: var(--card-color);
-        border-radius: 10px;
-        padding: 15px;
-        transition: transform 0.3s ease;
-    }
-
-    .track-card:hover, .artist-card:hover, .album-card:hover {
-        transform: translateY(-5px);
-    }
-
-    .track-cover, .artist-image, .album-cover {
+    .img-square {
         width: 100%;
-        border-radius: 8px;
-        aspect-ratio: 1;
+        height: 200px;
         object-fit: cover;
-        margin-bottom: 15px;
+        aspect-ratio: 1/1;
     }
-
-    .track-controls, .artist-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 15px;
-    }
-
-    .play-button {
-        background: var(--primary-color);
+    .card {
+        transition: all 0.3s ease;
         border: none;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        color: white;
-        cursor: pointer;
-        transition: opacity 0.3s;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        background-color: #181818;
     }
-
-    .play-button:disabled {
-        background: #535353;
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        background-color: #282828;
+    }
+    .btn:disabled {
+        opacity: 0.6;
         cursor: not-allowed;
+        background-color: #535353 !important;
     }
-
-    .play-button.playing {
-        background: #e74c3c;
+    .btn-success {
+        background-color: #1DB954 !important;
+        border-color: #1DB954 !important;
     }
-
-    .spotify-link {
-        background: transparent;
-        border: 1px solid var(--primary-color);
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--primary-color);
-        text-decoration: none;
+    .list-group-item {
+        background-color: #181818;
+        color: white;
+        border-color: #333;
     }
-
-    .back-button {
-        background: transparent;
+    .alert {
+        background-color: #282828;
+        color: white;
         border: none;
-        color: var(--text-color);
-        cursor: pointer;
-        margin-bottom: 20px;
     }
 `;
 document.head.appendChild(style);
+
+// Función para mostrar "no hay resultados"
+function showNoResults() {
+    document.getElementById("resultsContainer").innerHTML = `
+        <div class="alert alert-info">
+            No se encontraron resultados para tu búsqueda.
+        </div>
+    `;
+}
