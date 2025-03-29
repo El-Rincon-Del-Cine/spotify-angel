@@ -321,7 +321,16 @@ async function getArtistTopSongs(artistId, artistName) {
         }
 
         // Obtener IDs de los tracks para buscar los preview_url
-        const trackIds = data.data.artist.discography.singles.items.map(item => item.releases.items[0].id).join(',');
+        const trackIds = data.data.artist.discography.singles.items
+            .map(item => item.releases?.items?.[0]?.id)
+            .filter(id => id) // Filtrar valores nulos o indefinidos
+            .join(',');
+        
+        if (!trackIds) {
+            container.innerHTML = '<p class="text-muted">No se encontraron previews disponibles.</p>';
+            return;
+        }
+        
         const trackUrl = `https://${API_HOST}/tracks/?ids=${trackIds}`;
         const trackResponse = await fetch(trackUrl, options);
         const tracksData = await trackResponse.json();
@@ -342,7 +351,9 @@ async function getArtistTopSongs(artistId, artistName) {
         `;
 
         data.data.artist.discography.singles.items.forEach(item => {
-            const track = item.releases.items[0];
+            const track = item.releases?.items?.[0];
+            if (!track) return;
+            
             const coverArtUrl = getOptimizedImageUrl(track.coverArt?.sources?.[0]?.url);
             const trackId = track.id;
             const spotifyUrl = `https://open.spotify.com/track/${trackId}`;
