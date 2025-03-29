@@ -312,24 +312,48 @@ async function getArtistTopSongs(artistId, artistName) {
             }
         };
 
-        // Obtener singles
+        // Paso 1: Obtener singles con validación
         const response = await fetch(singlesUrl, options);
         const data = await response.json();
-        const singles = data.data?.artist?.discography?.singles?.items || [];
+        
+        // Validación profunda de la estructura de datos
+        const singles = data.data?.artist?.discography?.singles?.items?.filter(item => 
+            item?.releases?.items?.[0]?.id
+        ) || [];
 
-        // Extraer IDs de tracks
+        if (singles.length === 0) {
+            throw new Error("No se encontraron canciones válidas");
+        }
+
+        // Paso 2: Extraer IDs de tracks con seguridad
         const trackIds = singles
-            .map(item => item.releases.items[0]?.id)
-            .filter(id => id)
+            .map(item => {
+                try {
+                    return item.releases.items[0].id;
+                } catch (error) {
+                    console.warn("Item inválido omitido:", error);
+                    return null;
+                }
+            })
+            .filter(id => id && typeof id === 'string')
             .join(',');
 
-        // Obtener detalles de los tracks (incluyendo preview_url)
+        if (!trackIds) {
+            throw new Error("No hay IDs válidos para buscar");
+        }
+
+        // Paso 3: Obtener detalles de tracks con manejo de errores
         const tracksUrl = `https://${API_HOST}/tracks/?ids=${trackIds}`;
         const tracksResponse = await fetch(tracksUrl, options);
-        const tracksData = await tracksResponse.json();
-        const tracksWithPreviews = tracksData.tracks || [];
+        
+        if (!tracksResponse.ok) {
+            throw new Error(`Error HTTP: ${tracksResponse.status}`);
+        }
 
-        // Generar HTML
+        const tracksData = await tracksResponse.json();
+        const tracksMap = new Map(tracksData.tracks?.map(track => [track.id, track]) || []);
+
+        // Paso 4: Construir HTML con validación
         let html = `
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3>Canciones de ${artistName}</h3>
@@ -340,39 +364,63 @@ async function getArtistTopSongs(artistId, artistName) {
             <div class="row row-cols-1 row-cols-md-3 g-4">
         `;
 
-        singles.forEach((item, index) => {
-            const track = item.releases.items[0];
-            const preview = tracksWithPreviews.find(t => t.id === track.id);
-            const previewUrl = preview?.preview_url;
-            const coverArtUrl = getOptimizedImageUrl(track.coverArt?.sources?.[0]?.url);
+        singles.forEach((item) => {
+            try {
+                const release = item.releases.items[0];
+                if (!release) return; // Omitir elementos inválidos
+                
+                const trackId = release.id;
+                const trackData = tracksMap.get(trackId);
+                
+                const previewUrl = trackData?.preview_url || null;
+                const coverArtUrl = getOptimizedImageUrl(
+                    release.coverArt?.sources?.[0]?.url || 
+                    trackData?.album?.images?.[0]?.url
+                );
 
-            html += `
-                <div class="col">
-                    <div class="card h-100">
-                        <img src="${coverArtUrl}" class="card-img-top" alt="Portada">
-                        <div class="card-body">
-                            <h5 class="card-title">${track.name || "Canción desconocida"}</h5>
-                        </div>
-                        <div class="card-footer bg-transparent">
-                            <div class="d-flex gap-2">
-                                <button onclick="playPreview('${previewUrl}', this)" 
-                                        ${!previewUrl ? 'disabled' : ''} 
-                                        class="btn btn-sm btn-success flex-grow-1">
-                                    ${previewUrl ? '<i class="fas fa-play"></i> Escuchar' : 'No disponible'}
-                                </button>
+                const trackName = release.name || trackData?.name || "Canción desconocida";
+
+                html += `
+                    <div class="col">
+                        <div class="card h-100">
+                            <img src="${coverArtUrl}" 
+                                 class="card-img-top" 
+                                 alt="${trackName}"
+                                 onerror="this.src='https://via.placeholder.com/300'">
+                            <div class="card-body">
+                                <h5 class="card-title">${trackName}</h5>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <div class="d-flex gap-2 justify-content-center">
+                                    ${previewUrl ? `
+                                    <button onclick="playPreview('${previewUrl}', this)" 
+                                            class="btn btn-sm btn-success flex-grow-1">
+                                        <i class="fas fa-play"></i> Escuchar
+                                    </button>
+                                    ` : `
+                                    <button class="btn btn-sm btn-secondary flex-grow-1" disabled>
+                                        <i class="fas fa-ban"></i> No disponible
+                                    </button>
+                                    `}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>`;
+                    </div>`;
+            } catch (error) {
+                console.error("Error procesando canción:", error);
+            }
         });
 
-        container.innerHTML = html + '</div>';
+        html += '</div>';
+        container.innerHTML = html;
+
     } catch (error) {
-        console.error("Error al obtener canciones:", error);
+        console.error("Error principal:", error);
         container.innerHTML = `
             <div class="alert alert-danger">
-                Error: ${error.message}
-                <button onclick="showResults('artists')" class="btn btn-outline-secondary mt-2">
+                ${error.message}
+                <button onclick="showResults('artists')" 
+                        class="btn btn-outline-secondary mt-2">
                     <i class="fas fa-arrow-left"></i> Volver
                 </button>
             </div>
