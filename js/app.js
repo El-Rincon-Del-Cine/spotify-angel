@@ -303,18 +303,49 @@ async function getArtistTopSongs(artistId, artistName) {
     container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p>Cargando canciones populares...</p></div>';
 
     try {
-        const url = `https://${API_HOST}/artist_singles/?id=${artistId}&offset=0&limit=10`;
-        const options = {
-            method: "GET",
-            headers: {
-                "x-rapidapi-key": API_KEY,
-                "x-rapidapi-host": API_HOST
+        // 1. Obtener singles del artista
+        const singlesResponse = await fetch(
+            `https://${API_HOST}/artist_singles/?id=${artistId}`,
+            {
+                method: "GET",
+                headers: {
+                    "x-rapidapi-key": API_KEY,
+                    "x-rapidapi-host": API_HOST
+                }
             }
-        };
+        );
+        
+        const singlesData = await singlesResponse.json();
+        
+        // 2. Validar y extraer IDs de tracks
+        const validSingles = singlesData.data?.artist?.discography?.singles?.items?.filter(item => 
+            item?.releases?.items?.[0]?.id
+        ) || [];
 
-        const response = await fetch(url, options);
-        const data = await response.json();
+        if (validSingles.length === 0) {
+            throw new Error("No se encontraron canciones populares");
+        }
 
+        // 3. Obtener detalles completos de los tracks
+        const trackIds = validSingles
+            .map(item => item.releases.items[0].id.split(':')[2])
+            .filter(id => id)
+            .join(',');
+
+        const tracksResponse = await fetch(
+            `https://${API_HOST}/tracks/?ids=${trackIds}`,
+            {
+                method: "GET",
+                headers: {
+                    "x-rapidapi-key": API_KEY,
+                    "x-rapidapi-host": API_HOST
+                }
+            }
+        );
+        
+        const tracksData = await tracksResponse.json();
+
+        // 4. Construir HTML
         let html = `
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3>Canciones populares de ${artistName}</h3>
@@ -325,44 +356,55 @@ async function getArtistTopSongs(artistId, artistName) {
             <div class="row row-cols-1 row-cols-md-3 g-4">
         `;
 
-        if (data.data?.artist?.discography?.singles?.items) {
-            data.data.artist.discography.singles.items.forEach(item => {
-                const track = item.releases.items[0];
-                const coverArtUrl = getOptimizedImageUrl(track.coverArt?.sources?.[0]?.url);
-                const trackId = track.id;
-                const spotifyUrl = `https://open.spotify.com/track/${trackId}`;
+        validSingles.forEach((item, index) => {
+            const single = item.releases.items[0];
+            const fullTrackData = tracksData.tracks[index];
+            
+            // Datos con fallbacks
+            const previewUrl = fullTrackData?.preview_url;
+            const trackId = single.id.split(':')[2] || '';
+            const trackName = single.name || fullTrackData?.name || "Canción desconocida";
+            const coverArtUrl = getOptimizedImageUrl(
+                single.coverArt?.sources?.[0]?.url || 
+                fullTrackData?.album?.images?.[0]?.url
+            );
 
-                html += `
-                    <div class="col">
-                        <div class="card h-100">
-                            <img src="${coverArtUrl}" class="card-img-top" alt="Portada del single">
-                            <div class="card-body">
-                                <h5 class="card-title">${track.name || "Canción desconocida"}</h5>
-                            </div>
-                            <div class="card-footer bg-transparent">
-                                <div class="d-flex gap-2">
-                                    <a href="${spotifyUrl}" target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
-                                        <i class="fab fa-spotify"></i> Spotify
-                                    </a>
-                                    <button onclick="playPreview('${trackId}')" class="btn btn-sm btn-success flex-grow-1">
-                                        <i class="fas fa-play"></i> Escuchar
-                                    </button>
-                                </div>
+            html += `
+                <div class="col">
+                    <div class="card h-100">
+                        <img src="${coverArtUrl}" 
+                             class="card-img-top" 
+                             alt="${trackName}"
+                             onerror="this.src='https://via.placeholder.com/300'">
+                        <div class="card-body">
+                            <h5 class="card-title">${trackName}</h5>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex gap-2">
+                                <a href="https://open.spotify.com/track/${trackId}" 
+                                   target="_blank" 
+                                   class="btn btn-sm btn-outline-primary flex-grow-1">
+                                    <i class="fab fa-spotify"></i> Spotify
+                                </a>
+                                <button onclick="playPreview('${previewUrl}', this)" 
+                                        ${!previewUrl ? 'disabled' : ''} 
+                                        class="btn btn-sm btn-success flex-grow-1">
+                                    ${previewUrl ? '<i class="fas fa-play"></i> Escuchar' : 'Preview no disponible'}
+                                </button>
                             </div>
                         </div>
-                    </div>`;
-            });
-        } else {
-            html += '<div class="col-12"><p class="text-muted">No se encontraron canciones populares.</p></div>';
-        }
+                    </div>
+                </div>`;
+        });
 
         html += '</div>';
         container.innerHTML = html;
+
     } catch (error) {
         console.error("Error al obtener canciones populares:", error);
         container.innerHTML = `
             <div class="alert alert-danger">
-                Error al cargar las canciones populares: ${error.message}
+                ${error.message}
                 <button onclick="showResults('artists')" class="btn btn-outline-secondary mt-2">
                     <i class="fas fa-arrow-left"></i> Volver
                 </button>
