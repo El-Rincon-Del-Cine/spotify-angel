@@ -303,7 +303,7 @@ async function getArtistTopSongs(artistId, artistName) {
     container.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div><p>Cargando canciones populares...</p></div>';
 
     try {
-        const url = `https://${API_HOST}/artist_singles/?id=${artistId}&offset=0&limit=10`;
+        const url = `https://${API_HOST}/recommendations/?limit=10&seed_artists=${artistId}`;
         const options = {
             method: "GET",
             headers: {
@@ -315,34 +315,14 @@ async function getArtistTopSongs(artistId, artistName) {
         const response = await fetch(url, options);
         const data = await response.json();
 
-        if (!data.data?.artist?.discography?.singles?.items) {
+        if (!data.tracks || data.tracks.length === 0) {
             container.innerHTML = '<p class="text-muted">No se encontraron canciones populares.</p>';
             return;
         }
 
-        // Obtener IDs de los tracks para buscar los preview_url
-        const trackIds = data.data.artist.discography.singles.items
-            .map(item => item.releases?.items?.[0]?.id)
-            .filter(id => id) // Filtrar valores nulos o indefinidos
-            .join(',');
-        
-        if (!trackIds) {
-            container.innerHTML = '<p class="text-muted">No se encontraron previews disponibles.</p>';
-            return;
-        }
-        
-        const trackUrl = `https://${API_HOST}/tracks/?ids=${trackIds}`;
-        const trackResponse = await fetch(trackUrl, options);
-        const tracksData = await trackResponse.json();
-
-        const tracksWithPreviews = tracksData.tracks.reduce((acc, track) => {
-            acc[track.id] = track.preview_url;
-            return acc;
-        }, {});
-
         let html = `
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3>Canciones populares de ${artistName}</h3>
+                <h3>Canciones populares recomendadas de ${artistName}</h3>
                 <button onclick="showResults('artists')" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left"></i> Volver
                 </button>
@@ -350,14 +330,11 @@ async function getArtistTopSongs(artistId, artistName) {
             <div class="row row-cols-1 row-cols-md-3 g-4">
         `;
 
-        data.data.artist.discography.singles.items.forEach(item => {
-            const track = item.releases?.items?.[0];
-            if (!track) return;
-            
-            const coverArtUrl = getOptimizedImageUrl(track.coverArt?.sources?.[0]?.url);
+        data.tracks.forEach(track => {
+            const coverArtUrl = getOptimizedImageUrl(track.album?.images?.[0]?.url);
             const trackId = track.id;
             const spotifyUrl = `https://open.spotify.com/track/${trackId}`;
-            const previewUrl = tracksWithPreviews[trackId] || "";
+            const previewUrl = track.preview_url || "";
 
             html += `
                 <div class="col">
