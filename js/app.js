@@ -317,21 +317,15 @@ async function getArtistTopSongs(artistId, artistName) {
         
         const singlesData = await singlesResponse.json();
         
-        // 2. Validar y extraer IDs de tracks
-        const validSingles = singlesData.data?.artist?.discography?.singles?.items?.filter(item => 
-            item?.releases?.items?.[0]?.id
-        ) || [];
+        // 2. Extraer IDs de canciones válidos
+        const trackIds = singlesData.data?.artist?.discography?.singles?.items
+            ?.map(item => item?.releases?.items?.[0]?.id?.split(':')?.[2])
+            ?.filter(id => id)
+            ?.join(',') || '';
 
-        if (validSingles.length === 0) {
-            throw new Error("No se encontraron canciones populares");
-        }
+        if (!trackIds) throw new Error("No se encontraron IDs válidos");
 
-        // 3. Obtener detalles completos de los tracks
-        const trackIds = validSingles
-            .map(item => item.releases.items[0].id.split(':')[2])
-            .filter(id => id)
-            .join(',');
-
+        // 3. Obtener detalles de los tracks
         const tracksResponse = await fetch(
             `https://${API_HOST}/tracks/?ids=${trackIds}`,
             {
@@ -344,6 +338,7 @@ async function getArtistTopSongs(artistId, artistName) {
         );
         
         const tracksData = await tracksResponse.json();
+        const tracksMap = new Map(tracksData.tracks.map(track => [track.id, track]));
 
         // 4. Construir HTML
         let html = `
@@ -356,28 +351,23 @@ async function getArtistTopSongs(artistId, artistName) {
             <div class="row row-cols-1 row-cols-md-3 g-4">
         `;
 
-        validSingles.forEach((item, index) => {
-            const single = item.releases.items[0];
-            const fullTrackData = tracksData.tracks[index];
-            
-            // Datos con fallbacks
-            const previewUrl = fullTrackData?.preview_url;
-            const trackId = single.id.split(':')[2] || '';
-            const trackName = single.name || fullTrackData?.name || "Canción desconocida";
-            const coverArtUrl = getOptimizedImageUrl(
-                single.coverArt?.sources?.[0]?.url || 
-                fullTrackData?.album?.images?.[0]?.url
-            );
+        singlesData.data?.artist?.discography?.singles?.items?.forEach(item => {
+            const release = item.releases?.items?.[0];
+            if (!release) return;
+
+            const trackId = release.id?.split(':')?.[2];
+            const trackData = tracksMap.get(trackId);
+            const previewUrl = trackData?.preview_url;
 
             html += `
                 <div class="col">
                     <div class="card h-100">
-                        <img src="${coverArtUrl}" 
+                        <img src="${getOptimizedImageUrl(release.coverArt?.sources?.[0]?.url)}" 
                              class="card-img-top" 
-                             alt="${trackName}"
+                             alt="${release.name}"
                              onerror="this.src='https://via.placeholder.com/300'">
                         <div class="card-body">
-                            <h5 class="card-title">${trackName}</h5>
+                            <h5 class="card-title">${release.name || "Canción desconocida"}</h5>
                         </div>
                         <div class="card-footer bg-transparent">
                             <div class="d-flex gap-2">
@@ -404,7 +394,7 @@ async function getArtistTopSongs(artistId, artistName) {
         console.error("Error al obtener canciones populares:", error);
         container.innerHTML = `
             <div class="alert alert-danger">
-                ${error.message}
+                Error al cargar las canciones populares: ${error.message}
                 <button onclick="showResults('artists')" class="btn btn-outline-secondary mt-2">
                     <i class="fas fa-arrow-left"></i> Volver
                 </button>
